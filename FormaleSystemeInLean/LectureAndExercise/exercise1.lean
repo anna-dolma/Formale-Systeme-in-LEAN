@@ -1,4 +1,3 @@
-import FormaleSystemeInLean.Lecture_and_exercise.lecture1
 
 def Set (α : Type u) := α -> Prop
 
