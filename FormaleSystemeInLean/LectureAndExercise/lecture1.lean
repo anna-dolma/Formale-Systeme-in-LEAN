@@ -105,6 +105,14 @@ def sigma_star : Language Sigma := fun w : Word Sigma => True
 
 -- Every language over Σ is a subset of Σ*
 theorem sigma_star_subset : ∀ (L: Language Sigma), L ⊆ sigma_star := by
+  intro L
+  unfold sigma_star
+
+  have all_words : ∀ (w : Word Sigma), w ∈ sigma_star := by
+    intro w
+    unfold sigma_star
+    trivial
+
   sorry
 
 -- Concatenation of Languages
@@ -114,6 +122,20 @@ instance : Mul (Language Sigma) where
 -- Complement
 def Language.complement (L : Language Sigma) : Language Sigma :=
   sigma_star \ L
+
+theorem comp_via_inter (L₁ L₂ : Language Sigma) : L₁ \ L₂ = L₁ ∩ L₂.complement := by
+  apply Set.ext
+  intro w
+  constructor
+  . intro w_mem
+    rcases w_mem with ⟨w_mem, w_nmem⟩
+    unfold Language.complement
+    trivial
+  . intro w_mem
+    rcases w_mem with ⟨w_mem, w_nmem⟩
+    unfold Language.complement at w_nmem
+    -- kann man dann sigma_star_subset anwenden???
+    sorry
 
 -- For languages we can also execute concatenation multiple times and define this via Powers.
 def Language.pow (L : Language Sigma) : Nat -> Language Sigma
