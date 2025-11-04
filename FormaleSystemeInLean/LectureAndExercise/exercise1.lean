@@ -210,8 +210,7 @@ section Exercise2
       contradiction
 
 
---- TODO: für leere Sprache über einem beliebigen Alphabet???
-    theorem succ_pow_empty {α : Word Sigma} : ∀ n, n > 0 → Language.pow empty n = empty := by
+    theorem succ_pow_empty : ∀ n, n > 0 → Language.pow empty n = @empty Sigma := by
       intro n n₁
       unfold Language.pow
       cases n₁ with
@@ -224,7 +223,7 @@ section Exercise2
         apply empty_mul
 
 
-    theorem a4 : empty* = L_eps := by
+    theorem a4 : (@empty Sigma)* = L_eps := by
       unfold empty L_eps Language.kstar
       apply Set.ext
       intro w
@@ -259,7 +258,7 @@ section Exercise2
         rcases v_mem with ⟨m, v_mem⟩
         exists n+m -- wenn im goal existenzqauntor außen steht, bei allquantor intro
         -- potenzgesetze für addition: L^n * L^m = L^(m+n)
-        --
+
         sorry
       . sorry
 
@@ -279,14 +278,10 @@ section Exercise2
         trivial
         rcases h with ⟨w_a, ha, a_pow, hp, hab⟩
         -- zu zeigen: für alle n > 0 gilt: 'a'^n enthält keine b
-        unfold Language.pow at hp
-        cases a_pow with
-        | nil =>
+        rcases a_pow
 
-          sorry
-        | cons =>
-
-          sorry
+        sorry
+        sorry
 
 
 
