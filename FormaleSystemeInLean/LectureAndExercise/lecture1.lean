@@ -76,6 +76,12 @@ def some_word : Word Char := ['S','t','a','u','b','e','c','k','e','n']
 #eval List.IsSuffix ['e','c','k','e','n'] some_word
 
 #eval 'a'::some_word
+#eval some_word.splitAt 1
+#eval some_word.append []
+
+theorem append_nil : ∀ (L : List α), L.append [] = L := by
+  intro L
+  simp
 
 -- für alle alphabete sigma existiert ein leeres wort []
 -- [] * w = w für alle w ∈ sigma* (mit List.concat ?)
@@ -93,8 +99,15 @@ theorem epsilon_concat : ∀ (w : Word Sigma), w * [] = w := by
   | nil =>
     trivial
   | cons σ u ih =>
+    apply append_nil
 
-    sorry
+theorem concat_epsilon : ∀ (w : Word Sigma), [] * w = w := by
+  intro w
+  induction w with
+  | nil =>
+    trivial
+  | cons σ u ih =>
+     trivial
 
 
 -- A language is in turn just a set of words.
@@ -112,6 +125,7 @@ theorem sigma_star_subset : ∀ (L: Language Sigma), L ⊆ sigma_star := by
     intro w
     unfold sigma_star
     trivial
+
 
   sorry
 
@@ -132,10 +146,13 @@ theorem comp_via_inter (L₁ L₂ : Language Sigma) : L₁ \ L₂ = L₁ ∩ L�
     unfold Language.complement
     trivial
   . intro w_mem
-    rcases w_mem with ⟨w_mem, w_nmem⟩
-    unfold Language.complement at w_nmem
-    -- kann man dann sigma_star_subset anwenden???
-    sorry
+    rcases w_mem with ⟨w_1, w_2⟩
+    unfold Language.complement at w_2
+    constructor
+    . exact w_1
+    . rcases w_2 with ⟨ws, nw⟩
+      exact nw
+
 
 -- For languages we can also execute concatenation multiple times and define this via Powers.
 def Language.pow (L : Language Sigma) : Nat -> Language Sigma
