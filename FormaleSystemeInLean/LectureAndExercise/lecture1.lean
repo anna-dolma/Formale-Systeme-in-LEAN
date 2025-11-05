@@ -6,22 +6,6 @@ class Fintype (α : Type u) where
   elems : List α
   complete : ∀ a : α, a ∈ elems
 
-/-
-
-Leeres Wort: Länge 0 -> kann man dafür das symbol ε reservieren?
-Neutrales Element der konkatenation für Wörter (ist das Definition oder muss man das beweisen? )
-Präfix
-Infix
-Suffix
-Sprache: Menge von Wörtern über Alphabet
-Kleinste sprache: leere sprache
-Teilmenge jeder anderen sprache
-Größte Sprache: Sigma Stern
-Jede sprache über sigma ist Teilmenge davon
-
--/
-
-
 -- The following type class instances are just allowing us to use some basic notation like ∅, ∈ or ∪ with the right definitions..
 instance : EmptyCollection (Set α) where
   emptyCollection := fun _ => False
@@ -79,20 +63,21 @@ def some_word : Word Char := ['S','t','a','u','b','e','c','k','e','n']
 #eval some_word.splitAt 1
 #eval some_word.append []
 
-theorem append_nil : ∀ (L : List α), L.append [] = L := by
-  intro L
-  simp
-
--- für alle alphabete sigma existiert ein leeres wort []
--- [] * w = w für alle w ∈ sigma* (mit List.concat ?)
-
--- evtl.: für alle nichtleeren wörter gilt: w = u*v (v darf leer sein)
--- kann man zeigen: head::tail = head * tail ?
-
 theorem nonempty_prefix [BEq Sigma] (σ : Sigma) (w : Word Sigma) : σ::w = σ * w := by
 
   sorry
 
+
+-- For every alphabet Sigma, there is an empty word ε. As we defined words as Lists
+-- with elements of type Sigma, ε is just the empty list [].
+-- ε is the identity element for concatenation of words:
+
+-- Auxiliary result for the actual theorem
+theorem append_nil : ∀ (L : List α), L.append [] = L := by
+  intro L
+  simp
+
+-- w * ε = w
 theorem epsilon_concat : ∀ (w : Word Sigma), w * [] = w := by
   intro w
   induction w with
@@ -101,6 +86,7 @@ theorem epsilon_concat : ∀ (w : Word Sigma), w * [] = w := by
   | cons σ u ih =>
     apply append_nil
 
+-- ε * w = w
 theorem concat_epsilon : ∀ (w : Word Sigma), [] * w = w := by
   intro w
   induction w with
@@ -114,10 +100,14 @@ theorem concat_epsilon : ∀ (w : Word Sigma), [] * w = w := by
 abbrev Language (Sigma : Type u) := Set (Word Sigma)
 
 -- The "biggest language" Σ* contains all words over Σ
-def sigma_star : Language Sigma := fun w : Word Sigma => True
+def sigma_star : Language Sigma := fun _ => True
+-- The empty language contains no words
+def L_empty : Language Sigma := fun _ => False
+-- The language containing only ε is not empty
+def L_eps : Language Sigma := fun w => w = []
 
 -- Every language over Σ is a subset of Σ*
-theorem sigma_star_subset : ∀ (L: Language Sigma), L ⊆ sigma_star := by
+theorem sigma_star_subset : ∀ (L : Language Sigma), L ⊆ sigma_star := by
   intro L
   unfold sigma_star
 
@@ -128,6 +118,13 @@ theorem sigma_star_subset : ∀ (L: Language Sigma), L ⊆ sigma_star := by
 
 
   sorry
+
+-- The empty language is a subset of any language.
+theorem L_eps_subset : ∀ (L : Language Sigma), L_empty ⊆ L := by
+  intro L
+  unfold L_empty
+  intro w w_mem
+  trivial
 
 -- Concatenation of Languages
 instance : Mul (Language Sigma) where
