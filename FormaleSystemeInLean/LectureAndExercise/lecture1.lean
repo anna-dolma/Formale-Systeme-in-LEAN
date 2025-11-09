@@ -64,8 +64,7 @@ theorem Set.inter_commutative (X Y : Set α) : X ∩ Y = Y ∩ X := by
 theorem Set.union_commutative (X Y : Set α) : X ∪ Y = Y ∪ X := by
   sorry
 
-open Classical
-
+-- to do: entfernen und stattdessen nur für sprachen beweisen, weil da klar ist, was das komplement bedeutet
 theorem Set.de_morgan1 (X Y : Set α) : X ∩ Y = (X.compl ∪ Y.compl).compl := by
   apply Set.ext
   intro e
@@ -211,19 +210,6 @@ postfix:max "*" => Language.kstar
 -- Additionally, one can define a "⁺" operator which is basically the Kleene Star without n=0.
 def Language.plus (L : Language Sigma) : Language Sigma := fun w => ∃ n > 0, w ∈ L^n
 postfix:max "⁺" => Language.plus
-
-theorem split_word (w : Word Sigma) : w = u*v ↔ ∃ l : (List (Word Sigma)), l = [u, v] ∧ w = l.flatten := by
-  constructor
-  . intro w_eq
-    simp
-    exact w_eq
-  . intro l
-    rcases l with ⟨l, l_eq⟩
-    . rcases l_eq with ⟨l_eq, w_eq⟩
-      cases l_eq
-      cases w_eq
-      simp
-      trivial
 
 theorem concat_split (w : Word Sigma) : w = u*v ↔ w = [u, v].flatten := by
   constructor
