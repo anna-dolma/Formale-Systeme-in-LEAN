@@ -242,16 +242,58 @@ theorem Language.mem_pow (L : Language Sigma) (w : Word Sigma) : w ∈ L^n ↔ �
 
     sorry
 
+theorem Language.mem_kstar (L : Language Sigma) (w : Word Sigma) : w ∈ L* ↔ ∃ l : (List (Word Sigma)), w = l.flatten ∧ (∀ u ∈ l, u ∈ L) := by
+    constructor
+    . intro w_mem
+      unfold Language.kstar at w_mem
+      cases w with
+      | nil =>
+        simp
+
+        sorry
+      | cons =>
+        sorry
+    . sorry
 
 -- TO DO: rechenregeln für sprachen
 /-
-- distributivgesetze */∪
+- konkatenation ist rechts- und linksassoziativ
+- distributivgesetze */∪ (links und rechts)
 - {ε} neutral für *
 - K⁺ = K * K* = K* * K
 - K* = K⁺ ∪ {ε} = (K\{e}})*
 -/
 
-theorem distr_concat_union (L₁ L₂ L₃ : Language Sigma) : L₁ * (L₂ ∪ L₃) = (L₁ * L₂) ∪ (L₁ * L₃) := by
+theorem distr_concat_union_l (L₁ L₂ L₃ : Language Sigma) : (L₁ ∪ L₂) * L₃ = (L₁ * L₃) ∪ (L₂ * L₃) := by
+  apply Set.ext
+  intro w
+  constructor
+  . intro w_mem
+    rcases w_mem with ⟨u, u_mem, v, v_mem, w_eq⟩
+    cases u_mem with
+    | inl u_mem =>
+      apply Or.inl
+      exists u
+      constructor
+      . exact u_mem
+      . exists v
+    | inr u_mem =>
+      apply Or.inr
+      exists u
+      constructor
+      . exact u_mem
+      . exists v
+  . intro w_mem
+    cases w_mem with
+    | inl w_mem =>
+      rcases w_mem with ⟨u, u_mem, v, v_mem, w_eq⟩
+
+      sorry
+    | inr w_mem =>
+      rcases w_mem with ⟨u, u_mem, v, v_mem, w_eq⟩
+      sorry
+
+theorem distr_concat_union_r (L₁ L₂ L₃ : Language Sigma) : L₁ * (L₂ ∪ L₃) = (L₁ * L₂) ∪ (L₁ * L₃) := by
   apply Set.ext
   intro w
   constructor
@@ -271,11 +313,26 @@ theorem distr_concat_union (L₁ L₂ L₃ : Language Sigma) : L₁ * (L₂ ∪ 
       exact v_mem
       exists x
   . intro w_mem
-    rcases w_mem with ⟨v, v_mem, x, x_mem, w_eq⟩
-
-    sorry
-    .
-      sorry
+    cases w_mem with
+    | inl w_mem =>
+      rcases w_mem with ⟨v, v_mem, x, x_mem, w_eq⟩
+      exists v
+      constructor
+      . exact v_mem
+      . exists x
+        constructor
+        . apply Or.inl x_mem
+        . exact w_eq
+    | inr w_mem =>
+      rcases w_mem with ⟨v, v_mem, x, x_mem, w_eq⟩
+      exists v
+      constructor
+      . exact v_mem
+      . exists x
+        constructor
+        . apply Or.inr
+          exact x_mem
+        . exact w_eq
 
 theorem L_eps_mul : ∀ (L : Language Sigma), L ≠ L_empty → L_eps * L = L := by
   intro L ln
@@ -290,11 +347,31 @@ theorem L_eps_mul : ∀ (L : Language Sigma), L ≠ L_empty → L_eps * L = L :=
     exact u_mem
   . intro w_mem
     unfold L_eps
+    exists []
+    constructor
+    . trivial
+    . exists w
 
-    sorry
-
-theorem mul_L_eps : ∀ (L : Language Sigma), L * L_eps = L := by
-  sorry
+theorem mul_L_eps : ∀ (L : Language Sigma), L ≠ L_empty → L * L_eps = L := by
+  intro L ln
+  apply Set.ext
+  intro w
+  constructor
+  . intro w_mem
+    rcases w_mem with ⟨v, v_mem, u, u_mem, _, _⟩
+    unfold L_eps at u_mem
+    cases u_mem
+    rw [epsilon_concat]
+    exact v_mem
+  . intro w_mem
+    unfold L_eps
+    exists w
+    constructor
+    . exact w_mem
+    . exists []
+      rw [epsilon_concat]
+      simp
+      trivial
 
 -- The empty language ∅ is an annihilating element for concatenation.
 -- Since concatenation is not a commutative operation, we need a proof for ∅ * l = ∅ and for L * ∅ = ∅:
