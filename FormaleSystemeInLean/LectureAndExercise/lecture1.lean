@@ -40,6 +40,7 @@ theorem Set.ext (X Y : Set α) : (∀ e, e ∈ X ↔ e ∈ Y) -> X = Y := by
 -- TO DO: für Mengen
 /-
 - kommutativiät von ∩, ∪
+- assoziativität ???
 - distributivgesetze
 - de morgansche regeln
 -/
@@ -259,7 +260,6 @@ theorem Language.mem_kstar (L : Language Sigma) (w : Word Sigma) : w ∈ L* ↔ 
 /-
 - konkatenation ist rechts- und linksassoziativ
 - distributivgesetze */∪ (links und rechts)
-- {ε} neutral für *
 - K⁺ = K * K* = K* * K
 - K* = K⁺ ∪ {ε} = (K\{e}})*
 -/
