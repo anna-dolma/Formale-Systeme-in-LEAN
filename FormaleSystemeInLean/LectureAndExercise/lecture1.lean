@@ -27,10 +27,6 @@ instance : HasSSubset (Set α) where
 instance : SDiff (Set α) where
   sdiff A B := fun e => e ∈ A ∧ ¬(e ∈ B)
 
-def Set.compl (A : Set α) : Set α :=
-  fun e => ¬(e ∈ A)
-
-
 -- Set extensionality: Two sets are equal if they contain the same elements. This is not something we define but we can prove it!
 theorem Set.ext (X Y : Set α) : (∀ e, e ∈ X ↔ e ∈ Y) -> X = Y := by
   intro h; apply funext; intro e; apply propext; specialize h e; exact h
@@ -38,7 +34,6 @@ theorem Set.ext (X Y : Set α) : (∀ e, e ∈ X ↔ e ∈ Y) -> X = Y := by
 
 -- TO DO: für Mengen
 /-
-- kommutativiät von ∩, ∪
 - assoziativität ???
 - distributivgesetze
 - de morgansche regeln
@@ -62,28 +57,25 @@ theorem Set.inter_commutative (X Y : Set α) : X ∩ Y = Y ∩ X := by
       exact e_x
 
 theorem Set.union_commutative (X Y : Set α) : X ∪ Y = Y ∪ X := by
-  sorry
-
--- to do: entfernen und stattdessen nur für sprachen beweisen, weil da klar ist, was das komplement bedeutet
-theorem Set.de_morgan1 (X Y : Set α) : X ∩ Y = (X.compl ∪ Y.compl).compl := by
   apply Set.ext
   intro e
   constructor
   . intro e_mem
-    unfold Set.compl
-    rcases e_mem with ⟨hx, hy⟩
-    intro e_n
-    rcases e_n
-    . contradiction
-    . contradiction
-  . unfold Set.compl
-    intro e_mem
-    constructor
-    .
-
-      sorry
-    .
-      sorry
+    apply Or.elim e_mem
+    . intro e_mem_x
+      apply Or.inr
+      exact e_mem_x
+    . intro e_mem_y
+      apply Or.inl
+      exact e_mem_y
+  . intro e_mem
+    apply Or.elim e_mem
+    . intro e_mem_x
+      apply Or.inr
+      exact e_mem_x
+    . intro e_mem_y
+      apply Or.inl
+      exact e_mem_y
 
 -- From now on, we pick some alphabet Sigma. In fact, we do not even care about the type of Sigma. In can basically be anything.
 variable {Sigma : Type u}
@@ -144,7 +136,6 @@ theorem concat_epsilon : ∀ (w : Word Sigma), [] * w = w := by
   | cons σ u ih =>
      trivial
 
-
 -- A language is in turn just a set of words.
 abbrev Language (Sigma : Type u) := Set (Word Sigma)
 
@@ -194,6 +185,91 @@ theorem diff_via_inter (L₁ L₂ : Language Sigma) : L₁ \ L₂ = L₁ ∩ L�
     . rcases w_2 with ⟨ws, nw⟩
       exact nw
 
+theorem de_morgan_rule1 (L₁ L₂ : Language Sigma) : (L₁ ∪ L₂).complement = L₁.complement ∩ L₂.complement := by
+  apply Set.ext
+  intro w
+  constructor
+  . intro w_mem
+    unfold Language.complement at w_mem
+    rcases w_mem with ⟨w_mem, w_nmem⟩
+    unfold Language.complement
+    constructor
+    . constructor
+      . exact w_mem
+      . simp [Membership.mem] at w_nmem
+        intro f
+        have contra : w ∈ L₁ ∪ L₂ := Or.inl f
+        contradiction
+    . constructor
+      . exact w_mem
+      . intro f
+        have contra : w ∈ L₁ ∪ L₂ := Or.inr f
+        contradiction
+  . intro w_mem
+    unfold Language.complement at w_mem
+    rcases w_mem with ⟨w_mem1, w_mem2⟩
+    unfold Language.complement
+    rcases w_mem1 with ⟨w_mem, w_nmem1⟩
+    rcases w_mem2 with ⟨w_mem, w_nmem2⟩
+    constructor
+    . exact w_mem
+    . intro f
+      cases f with
+      | inl w_mem1 =>
+        contradiction
+      | inr w_mem2 =>
+        contradiction
+
+theorem de_morgan_rule2 (L₁ L₂ : Language Sigma) : (L₁ ∩ L₂).complement = L₁.complement ∪ L₂.complement := by
+  apply Set.ext
+  intro w
+  constructor
+  . intro w_mem
+    unfold Language.complement at w_mem
+    rcases w_mem with ⟨w_mem, w_nmem⟩
+    unfold Language.complement
+    constructor
+    constructor
+    . exact w_mem
+    . intro w_mem1
+      unfold Not at w_nmem
+
+      sorry
+  . intro w_mem
+    rcases w_mem with w_mem1 | w_mem2
+    rcases w_mem1 with ⟨w_mem1, w_nmem1⟩
+    . unfold Language.complement
+      constructor
+      . exact w_mem1
+      . intro f
+        rcases f with ⟨l, r⟩
+        contradiction
+    rcases w_mem2 with ⟨w_mem2, w_nmem2⟩
+    . unfold Language.complement
+      constructor
+      . exact w_mem2
+      . intro f
+        rcases f with ⟨l, r⟩
+        contradiction
+
+theorem double_complement (L : Language Sigma) : (L.complement).complement = L := by
+  apply Set.ext
+  intro w
+  constructor
+  . intro w_mem
+    unfold Language.complement at w_mem
+    rcases w_mem with ⟨w_mem, w_nmem⟩
+
+    sorry
+
+  . intro w_mem
+    unfold Language.complement
+    constructor
+    . unfold sigma_star
+      trivial
+    . intro f
+      rcases f with ⟨w_mem_s, w_nmem⟩
+      contradiction
 
 -- For languages we can also execute concatenation multiple times and define this via Powers.
 def Language.pow (L : Language Sigma) : Nat -> Language Sigma
@@ -210,16 +286,6 @@ postfix:max "*" => Language.kstar
 -- Additionally, one can define a "⁺" operator which is basically the Kleene Star without n=0.
 def Language.plus (L : Language Sigma) : Language Sigma := fun w => ∃ n > 0, w ∈ L^n
 postfix:max "⁺" => Language.plus
-
-theorem concat_split (w : Word Sigma) : w = u*v ↔ w = [u, v].flatten := by
-  constructor
-  . intro w_eq
-    simp
-    exact w_eq
-  . intro w_eq
-    rcases w_eq
-    simp
-    trivial
 
 theorem Language.mem_pow (L : Language Sigma) (w : Word Sigma) : w ∈ L^n ↔ ∃ l : (List (Word Sigma)), w = l.flatten ∧ l.length = n ∧ (∀ u ∈ l, u ∈ L) := by
   constructor
@@ -244,14 +310,33 @@ theorem Language.mem_pow (L : Language Sigma) (w : Word Sigma) : w ∈ L^n ↔ �
         | inr u_mem => apply x_mem; exact u_mem
   . intro h
     rcases h with ⟨l, w_eq, w_l, u_mem⟩
-    induction l generalizing n with
+    induction l generalizing n w with
     | nil =>
       simp_all
       subst w_l
       trivial
     | cons v l lh =>
-      specialize n
 
+      -- erst den tail fall beweisen?
+      have l_mem : ∀ (u : Word Sigma), u ∈ v :: l → u ∈ L := by
+        intro x x_mem
+        rw [List.mem_cons] at x_mem
+        simp at u_mem
+        rcases u_mem with ⟨v_mem, u_mem⟩
+        rcases x_mem
+        . subst x
+          exact v_mem
+        . simp_all --hä TT
+          --sorry
+      have l_len : l.length = n-1 := by
+        rw [List.length_cons] at w_l
+        symm at w_l
+        subst w_l
+        simp
+
+      have tail_case : l.flatten ∈ L^(n-1) := by
+
+        sorry
 
       sorry
 
@@ -293,31 +378,87 @@ theorem Language.mem_kstar (L : Language Sigma) (w : Word Sigma) : w ∈ L* ↔ 
         unfold Language.kstar at h_tail
         rcases h_tail with ⟨n, h_tail⟩
         exists n+1
-        have test : (v :: l').flatten ∈ L * L^n := by
+        have succ_pow : (v :: l').flatten ∈ L * L^n := by
           simp
           exists v
           constructor
           . exact v_mem
           . exists l'.flatten
-        apply test
+        apply succ_pow
 
 -- TO DO: rechenregeln für sprachen
 /-
 - konkatenation ist rechts- und linksassoziativ
-- distributivgesetze */∪ (links und rechts)
 - K⁺ = K * K* = K* * K
 - K* = K⁺ ∪ {ε} = (K\{e}})*
 - Lⁿ * Lᵐ = Lⁿ⁺ᵐ (????)
 -/
+
+
+
+theorem kstar_subset (L : Language Sigma) : ∀ (n : Nat), L^n ⊆ L* := by
+  intro n w w_mem
+  cases n with
+  | zero =>
+    exists 0
+  | succ n =>
+    exists n+1
+
+theorem first_power (L : Language Sigma) : L^1 = L := by
+    apply Set.ext
+    intro w
+    constructor
+    . intro w_mem
+      rcases w_mem with ⟨v, v_mem, u, u_mem, w_eq⟩
+      unfold Language.pow at u_mem
+      rcases u_mem
+      rw [epsilon_concat] at w_eq
+      subst w_eq
+      exact v_mem
+
+    . intro w_mem
+      exists w
+      constructor
+      . exact w_mem
+      . exists []
+        constructor
+        . unfold Language.pow
+          simp [Membership.mem]
+        . symm
+          apply epsilon_concat
 
 theorem kstar_plus (L : Language Sigma) : L⁺ = L * L* := by
   apply Set.ext
   intro w
   constructor
   . intro w_mem
-    rcases w_mem with ⟨n, l⟩
+    rcases w_mem with ⟨n, gtz, w_mem⟩
+    induction gtz with
+    | refl =>
+      exists w
+      constructor
+      . simp at w_mem
+        rw [first_power] at w_mem
+        exact w_mem
+      . simp at w_mem
+        exists []
+        constructor
+        . exists 0
+        . rw [first_power] at w_mem
+          symm
+          apply epsilon_concat
+    | step le ih =>
+      rw [Nat.succ_eq_add_one] at w_mem
+      rcases w_mem with ⟨v, v_mem, u, u_mem, w_eq⟩
 
-    sorry
+      have u_mem_kstar : u ∈ L* := by
+        unfold Language.kstar
+        simp [Membership.mem]
+
+        sorry
+
+      sorry
+
   . intro w_mem
     rcases w_mem with ⟨v, v_mem, u, u_mem, w_eq⟩
     rcases u_mem with ⟨n, u_mem⟩
@@ -335,7 +476,8 @@ theorem kstar_plus (L : Language Sigma) : L⁺ = L * L* := by
         constructor
         .
           sorry
-        . sorry
+        .
+          sorry
 
       rw [help] at v_mem
       trivial
@@ -351,32 +493,7 @@ theorem kstar_plus (L : Language Sigma) : L⁺ = L * L* := by
         sorry
 
 
-theorem first_power (L : Language Sigma) : L ≠ L_empty → L^1 = L := by
-    intro ne
-    apply Set.ext
-    intro w
-    constructor
-    . intro w_mem
-      rcases w_mem with ⟨v, v_mem, u, u_mem, w_eq⟩
-      unfold Language.pow at u_mem
-      rcases u_mem
-      rw [epsilon_concat] at w_eq
-      subst w_eq
-      exact v_mem
-
-    . intro w_mem
-
-
-      sorry
-
-theorem kstar_subset (L : Language Sigma) : ∀ (n : Nat), L^n ⊆ L* := by
-  intro n w w_mem
-  cases n with
-  | zero =>
-    exists 0
-  | succ n =>
-    exists n+1
-
+-- concatenation of languages is distributive over union
 theorem distr_concat_union_l (L₁ L₂ L₃ : Language Sigma) : (L₁ ∪ L₂) * L₃ = (L₁ * L₃) ∪ (L₂ * L₃) := by
   apply Set.ext
   intro w
@@ -400,11 +517,18 @@ theorem distr_concat_union_l (L₁ L₂ L₃ : Language Sigma) : (L₁ ∪ L₂)
     cases w_mem with
     | inl w_mem =>
       rcases w_mem with ⟨u, u_mem, v, v_mem, w_eq⟩
-
-      sorry
+      exists u
+      constructor
+      . apply Or.inl
+        exact u_mem
+      . exists v
     | inr w_mem =>
       rcases w_mem with ⟨u, u_mem, v, v_mem, w_eq⟩
-      sorry
+      exists u
+      constructor
+      . apply Or.inr
+        exact u_mem
+      . exists v
 
 theorem distr_concat_union_r (L₁ L₂ L₃ : Language Sigma) : L₁ * (L₂ ∪ L₃) = (L₁ * L₂) ∪ (L₁ * L₃) := by
   apply Set.ext
