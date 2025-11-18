@@ -1,5 +1,6 @@
+import FormaleSystemeInLean.LectureAndExercise.lecture1
 
-def Set (α : Type u) := α -> Prop
+/-def Set (α : Type u) := α -> Prop
 
 -- The following type class instances are just allowing us to use some basic notation like ∅, ∈ or ∪ with the right definitions..
 instance : EmptyCollection (Set α) where
@@ -53,8 +54,11 @@ instance : NatPow (Language Sigma) where
 -- Finally we define the Kleene Star and notation for it.
 def Language.kstar (L : Language Sigma) : Language Sigma := fun w => ∃ n, w ∈ L^n
 postfix:max "*" => Language.kstar
+-/
 
 -- NOW FOR THE ACTUAL EXERCISE
+
+variable {Sigma : Type u}
 
 section Exercise1
 
@@ -180,51 +184,19 @@ section Exercise2
     def L7 : Language Char := fun w => w ∈ L5* * L6
 
     theorem a3: L4 = L7 := by
-      unfold L4 L7
-      funext
-
-      sorry
-
-
-    def empty : Language Sigma := fun _ => False
-    def L_eps : Language Sigma := fun w => w = []
-
-    theorem empty_mul : ∀ (L : Language Sigma), empty * L = empty := by
-      intro L
-      unfold empty
-      apply funext
+      unfold L4 L7 L5 L6
+      apply Set.ext
       intro w
-      simp
-      intro h
-      rcases h with ⟨u, u_mem, v, v_mem, h⟩
-      contradiction
+      constructor
+      . intro w_mem
+        simp [Membership.mem]
 
-    theorem mul_empty : ∀ (L : Language Sigma), L * empty = empty := by
-      intro L
-      unfold empty
-      apply funext
-      intro w
-      simp
-      intro h
-      rcases h with ⟨u, u_mem, v, v_mem, h⟩
-      contradiction
+        sorry
+      . sorry
 
 
-    theorem succ_pow_empty : ∀ n, n > 0 → Language.pow empty n = @empty Sigma := by
-      intro n n₁
-      unfold Language.pow
-      cases n₁ with
-      | refl =>
-        simp
-        unfold empty
-        apply empty_mul
-      | step =>
-        simp
-        apply empty_mul
-
-
-    theorem a4 : (@empty Sigma)* = L_eps := by
-      unfold empty L_eps Language.kstar
+    theorem a4 : (@L_empty Sigma)* = L_eps := by
+      unfold L_empty L_eps Language.kstar
       apply Set.ext
       intro w
       constructor
@@ -262,7 +234,7 @@ section Exercise2
         sorry
       . sorry
 
-    def L_ab : Language Char := fun w => w = ['a','b']
+    def L_ab : Language Char := fun w => w = ['a'] ∨ w = ['b']
     def L_a : Language Char := fun w => w = ['a']
     def L_b : Language Char := fun w => w = ['b']
 
@@ -274,26 +246,58 @@ section Exercise2
         unfold ab_word at contra
         rcases contra with ⟨n, h⟩
         unfold L_a at h
-        induction n
-        trivial
-        rcases h with ⟨w_a, ha, a_pow, hp, hab⟩
+        induction n with
+        | zero =>
+          trivial
+        | succ n ih =>
+          rcases h with ⟨w_a, ha, a_pow, hp, hab⟩
         -- zu zeigen: für alle n > 0 gilt: 'a'^n enthält keine b
-        rcases a_pow
+          cases a_pow with
+          | nil =>
+            rw [epsilon_concat] at hab
+            simp [Membership.mem] at ha
+            subst ha
+            contradiction
+          | cons head tail =>
+
+
+
+
+            sorry
+
+
 
         sorry
-        sorry
-
-
-
-        sorry
-        --sorry
 
       have mem : ab_word ∈ L_ab* := by
+        unfold ab_word
+        unfold Language.kstar L_ab
+        exists 2
+        rw [Language.mem_pow]
+        exists [['a'],['b']]
+        constructor
+        . trivial
+        . constructor
+          . simp
+          . intro w w_mem
+            simp [Membership.mem]
+            rcases w_mem
+            . apply Or.inl
+              rfl
+            . apply Or.inr
 
-        sorry
+              sorry
 
       sorry
 
+
+
+theorem only_a : ∀ w, w ∈ L_a^n → ∀ c ∈ w, c = 'a' := by
+              intro w w_mem c c_mem
+              rw [Language.mem_pow] at w_mem
+              rcases w_mem with ⟨l, l_eq, l_len, u_mem⟩
+
+              sorry
 
   end a2
 

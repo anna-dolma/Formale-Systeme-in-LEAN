@@ -287,6 +287,30 @@ postfix:max "*" => Language.kstar
 def Language.plus (L : Language Sigma) : Language Sigma := fun w => ∃ n > 0, w ∈ L^n
 postfix:max "⁺" => Language.plus
 
+theorem wtf (L : Language Sigma) : n > 0 → L^n = L * L^(n-1) := by
+        intro gt
+        apply Set.ext
+        intro y
+        constructor
+        . intro y_mem
+          induction n with
+          | zero =>
+            contradiction
+          | succ n ih =>
+            simp
+            exact y_mem
+        . intro y_mem
+          rcases y_mem with ⟨p, p_mem, q, q_mem, y_eq⟩
+          induction n with
+          | zero =>
+            contradiction
+          | succ n ih =>
+            simp at q_mem
+            exists p
+            constructor
+            . exact p_mem
+            . exists q
+
 theorem Language.mem_pow (L : Language Sigma) (w : Word Sigma) : w ∈ L^n ↔ ∃ l : (List (Word Sigma)), w = l.flatten ∧ l.length = n ∧ (∀ u ∈ l, u ∈ L) := by
   constructor
   intro w_mem
@@ -316,30 +340,38 @@ theorem Language.mem_pow (L : Language Sigma) (w : Word Sigma) : w ∈ L^n ↔ �
       subst w_l
       trivial
     | cons v l lh =>
-
-      -- erst den tail fall beweisen?
-      have l_mem : ∀ (u : Word Sigma), u ∈ v :: l → u ∈ L := by
+      have l_mem : ∀ (u : Word Sigma), u ∈ l → u ∈ L := by
         intro x x_mem
-        rw [List.mem_cons] at x_mem
         simp at u_mem
-        rcases u_mem with ⟨v_mem, u_mem⟩
-        rcases x_mem
-        . subst x
-          exact v_mem
-        . simp_all --hä TT
-          --sorry
+        rcases u_mem with ⟨v_mem, z⟩
+        specialize z x
+        apply z x_mem
       have l_len : l.length = n-1 := by
         rw [List.length_cons] at w_l
         symm at w_l
         subst w_l
         simp
-
-      have tail_case : l.flatten ∈ L^(n-1) := by
-
-        sorry
-
-      sorry
-
+      have tail_case : l.flatten ∈ L^(n-1) :=
+        lh l.flatten rfl l_len l_mem
+      have v_mem : v ∈ L := by
+        specialize u_mem v
+        apply u_mem
+        simp
+      have gtz : n > 0 := by
+        rw [List.length_cons] at w_l
+        induction n with
+        | zero =>
+          contradiction
+        | succ n ih =>
+          simp
+      have test : w ∈ L * L^(n-1) := by
+        exists v
+        constructor
+        . exact v_mem
+        . exists l.flatten
+      rw [wtf]
+      . exact test
+      . exact gtz
 
 theorem Language.mem_kstar (L : Language Sigma) (w : Word Sigma) : w ∈ L* ↔ ∃ l : (List (Word Sigma)), w = l.flatten ∧ (∀ u ∈ l, u ∈ L) := by
     constructor
@@ -394,8 +426,6 @@ theorem Language.mem_kstar (L : Language Sigma) (w : Word Sigma) : w ∈ L* ↔ 
 - Lⁿ * Lᵐ = Lⁿ⁺ᵐ (????)
 -/
 
-
-
 theorem kstar_subset (L : Language Sigma) : ∀ (n : Nat), L^n ⊆ L* := by
   intro n w w_mem
   cases n with
@@ -427,6 +457,37 @@ theorem first_power (L : Language Sigma) : L^1 = L := by
         . symm
           apply epsilon_concat
 
+theorem mul_eq_append (u v : Word Sigma) : u * v = u++v := by rfl
+
+theorem add_exp (L : Language Sigma) (m n : Nat) : (L^n) * L^m = L^(m+n) := by
+  apply Set.ext
+  intro w
+  constructor
+  . intro w_mem
+    rcases w_mem with ⟨v, v_mem, u, u_mem, w_eq⟩
+    rw [Language.mem_pow] at v_mem u_mem
+    rcases v_mem with ⟨l_v, v_eq, v_length, l_v_mem⟩
+    rcases u_mem with ⟨l_u, u_eq, u_length, l_u_mem⟩
+    rw [Language.mem_pow]
+    exists l_v*l_u
+    constructor
+    . rw [mul_eq_append]
+      subst w v u
+      rw [List.flatten_append]
+      rfl
+    . constructor
+      . rw [mul_eq_append]
+        rw [List.length_append]
+        subst v_length u_length
+        apply Nat.add_comm
+      . intro x x_mem
+        rw [mul_eq_append] at x_mem
+        have x_mem' : x ∈ l_v ∨ x ∈ l_u := by
+
+          sorry
+        sorry
+  . sorry
+
 theorem kstar_plus (L : Language Sigma) : L⁺ = L * L* := by
   apply Set.ext
   intro w
@@ -450,7 +511,7 @@ theorem kstar_plus (L : Language Sigma) : L⁺ = L * L* := by
     | step le ih =>
       rw [Nat.succ_eq_add_one] at w_mem
       rcases w_mem with ⟨v, v_mem, u, u_mem, w_eq⟩
-
+-- wie kann ich hier eine konkrete zahl für m angeben statt m†?
       have u_mem_kstar : u ∈ L* := by
         unfold Language.kstar
         simp [Membership.mem]
@@ -474,7 +535,7 @@ theorem kstar_plus (L : Language Sigma) : L⁺ = L * L* := by
         apply Set.ext
         intro y
         constructor
-        .
+        . intro y_mem
           sorry
         .
           sorry
