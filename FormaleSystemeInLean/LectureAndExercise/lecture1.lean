@@ -233,6 +233,7 @@ theorem de_morgan_rule2 (L₁ L₂ : Language Sigma) : (L₁ ∩ L₂).complemen
     . exact w_mem
     . intro w_mem1
       unfold Not at w_nmem
+      simp_all
 
       sorry
   . intro w_mem
@@ -261,7 +262,6 @@ theorem double_complement (L : Language Sigma) : (L.complement).complement = L :
     rcases w_mem with ⟨w_mem, w_nmem⟩
 
     sorry
-
   . intro w_mem
     unfold Language.complement
     constructor
@@ -501,8 +501,7 @@ theorem add_exp [BEq Sigma] (L : Language Sigma) (m n : Nat) : (L^n) * L^m = L^(
       constructor
       . rfl
       . constructor
-        . simp_all -- wie geht das schritt für schritt?
-          --sorry
+        . simp_all
         . intro z z_mem
           have z_mem_l : z ∈ l := by apply List.mem_of_mem_take z_mem
           apply b z z_mem_l
@@ -525,12 +524,7 @@ theorem add_exp [BEq Sigma] (L : Language Sigma) (m n : Nat) : (L^n) * L^m = L^(
         rw [← List.flatten_append]
         apply congrArg
         simp
-        -- to do: l = l1 ++ l2 -> sublisten definieren
-        --rw [List.take_append]
-        --
-        -- zeigen, was die länge von drop n l ist -> length_drop
         rw [← List.length_drop]
-        -- take_length -> take endet nichts mehr (nimmt alle), argument angeben (list.drop n l),
         conv => right; right; rw [List.take_length]
         rw [List.take_append_drop]
 

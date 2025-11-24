@@ -228,13 +228,13 @@ section Exercise2
         rcases h1 with ⟨u, u_mem, v, v_mem, w_eq⟩
         rcases u_mem with ⟨n, u_mem⟩
         rcases v_mem with ⟨m, v_mem⟩
-        exists m+n -- wenn im goal existenzqauntor außen steht, bei allquantor intro
+        exists m+n
         rw [← add_exp]
         exists u
         constructor
         . exact u_mem
         . exists v
-      .
+      . intro w_mem
         sorry
 
     def L_ab : Language Char := fun w => w = ['a'] ∨ w = ['b']
