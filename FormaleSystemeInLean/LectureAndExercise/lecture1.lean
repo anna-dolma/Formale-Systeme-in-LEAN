@@ -287,7 +287,8 @@ postfix:max "*" => Language.kstar
 def Language.plus (L : Language Sigma) : Language Sigma := fun w => ∃ n > 0, w ∈ L^n
 postfix:max "⁺" => Language.plus
 
-theorem wtf (L : Language Sigma) : n > 0 → L^n = L * L^(n-1) := by
+-- muss man das wirklich beweisen, oder bin ich nur zu blöd, die definition richtig anzuwenden?
+theorem pow_as_concat (L : Language Sigma) : n > 0 → L^n = L * L^(n-1) := by
         intro gt
         apply Set.ext
         intro y
@@ -369,7 +370,7 @@ theorem Language.mem_pow (L : Language Sigma) (w : Word Sigma) : w ∈ L^n ↔ �
         constructor
         . exact v_mem
         . exists l.flatten
-      rw [wtf]
+      rw [pow_as_concat]
       . exact test
       . exact gtz
 
@@ -445,7 +446,6 @@ theorem first_power (L : Language Sigma) : L^1 = L := by
       rw [epsilon_concat] at w_eq
       subst w_eq
       exact v_mem
-
     . intro w_mem
       exists w
       constructor
@@ -459,7 +459,8 @@ theorem first_power (L : Language Sigma) : L^1 = L := by
 
 theorem mul_eq_append (u v : Word Sigma) : u * v = u++v := by rfl
 
-theorem add_exp (L : Language Sigma) (m n : Nat) : (L^n) * L^m = L^(m+n) := by
+-- product rule for exponents
+theorem add_exp [BEq Sigma] (L : Language Sigma) (m n : Nat) : (L^n) * L^m = L^(m+n) := by
   apply Set.ext
   intro w
   constructor
@@ -482,11 +483,53 @@ theorem add_exp (L : Language Sigma) (m n : Nat) : (L^n) * L^m = L^(m+n) := by
         apply Nat.add_comm
       . intro x x_mem
         rw [mul_eq_append] at x_mem
-        have x_mem' : x ∈ l_v ∨ x ∈ l_u := by
+        have x_mem_l : ∀ (u : Word Sigma), u ∈ l_v++l_u → u ∈ L := by
+          intro y y_mem
+          rw [List.mem_append] at y_mem
+          rcases y_mem with inl | inr
+          . apply l_v_mem; exact inl
+          . apply l_u_mem; exact inr
+        apply x_mem_l
+        exact x_mem
+  . intro w_mem
+    rw [Language.mem_pow] at w_mem
+    rcases w_mem with ⟨l, l_eq, l_len, b⟩
+    exists (l.take n).flatten
+    constructor
+    . rw [Language.mem_pow]
+      exists l.take n
+      constructor
+      . rfl
+      . constructor
+        . simp_all -- wie geht das schritt für schritt?
+          --sorry
+        . intro z z_mem
+          have z_mem_l : z ∈ l := by apply List.mem_of_mem_take z_mem
+          apply b z z_mem_l
+    . exists (l.extract n).flatten
+      constructor
+      . rw [Language.mem_pow]
+        exists l.extract n
+        constructor
+        . rfl
+        . constructor
+          . simp_all
+          . intro z z_mem
+            have z_mem_l : z ∈ l := by
+              simp at z_mem
+              have mem_drop : z ∈ (List.drop n l) := List.mem_of_mem_take z_mem
+              apply List.mem_of_mem_drop mem_drop
+            apply b z z_mem_l
+      . subst w
+        rw [mul_eq_append]
+        rw [← List.flatten_append]
+        apply congrArg
+        simp
+        -- to do: l = l1 ++ l2 -> sublisten definieren
+        --rw [List.take_append]
+        --rw [← List.take_append_drop]
 
-          sorry
         sorry
-  . sorry
 
 theorem kstar_plus (L : Language Sigma) : L⁺ = L * L* := by
   apply Set.ext
