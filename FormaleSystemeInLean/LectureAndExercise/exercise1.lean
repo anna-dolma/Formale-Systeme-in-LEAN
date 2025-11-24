@@ -195,7 +195,7 @@ section Exercise2
       . sorry
 
 
-    theorem a4 : (@L_empty Sigma)* = L_eps := by
+    theorem ex_2d_1 : (@L_empty Sigma)* = L_eps := by
       unfold L_empty L_eps Language.kstar
       apply Set.ext
       intro w
@@ -217,7 +217,15 @@ section Exercise2
       apply Exists.intro 0
       trivial
 
-    theorem kstar_concat [BEq Sigma] : ∀ (L : Language Sigma), L* * L* = L* := by
+    theorem ex_2d_2 : ((@L_empty Sigma) ∪ L)* = L* := by
+      apply Set.ext
+      intro w
+      constructor
+      . intro w_mem
+        sorry
+      . sorry
+
+    theorem ex_2f_2 [BEq Sigma] : ∀ (L : Language Sigma), L* * L* = L* := by
       intro L
       apply Set.ext
       intro w
@@ -235,7 +243,13 @@ section Exercise2
         . exact u_mem
         . exists v
       . intro w_mem
-        sorry
+        exists w
+        constructor
+        . exact w_mem
+        . exists []
+          constructor
+          . exists 0
+          . rw [epsilon_concat]
 
     def L_ab : Language Char := fun w => w = ['a'] ∨ w = ['b']
     def L_a : Language Char := fun w => w = ['a']
