@@ -217,7 +217,7 @@ section Exercise2
       apply Exists.intro 0
       trivial
 
-    theorem kstar_concat : ∀ (L : Language Sigma), L* * L* = L* := by
+    theorem kstar_concat [BEq Sigma] : ∀ (L : Language Sigma), L* * L* = L* := by
       intro L
       apply Set.ext
       intro w
@@ -228,11 +228,14 @@ section Exercise2
         rcases h1 with ⟨u, u_mem, v, v_mem, w_eq⟩
         rcases u_mem with ⟨n, u_mem⟩
         rcases v_mem with ⟨m, v_mem⟩
-        exists n+m -- wenn im goal existenzqauntor außen steht, bei allquantor intro
-        -- potenzgesetze für addition: L^n * L^m = L^(m+n)
-
+        exists m+n -- wenn im goal existenzqauntor außen steht, bei allquantor intro
+        rw [← add_exp]
+        exists u
+        constructor
+        . exact u_mem
+        . exists v
+      .
         sorry
-      . sorry
 
     def L_ab : Language Char := fun w => w = ['a'] ∨ w = ['b']
     def L_a : Language Char := fun w => w = ['a']
@@ -244,30 +247,35 @@ section Exercise2
       have n_mem : ab_word ∉ L_a* ∪ L_b* := by
         intro contra
         unfold ab_word at contra
-        rcases contra with ⟨n, h⟩
-        unfold L_a at h
-        induction n with
-        | zero =>
-          trivial
-        | succ n ih =>
-          rcases h with ⟨w_a, ha, a_pow, hp, hab⟩
-        -- zu zeigen: für alle n > 0 gilt: 'a'^n enthält keine b
-          cases a_pow with
-          | nil =>
-            rw [epsilon_concat] at hab
-            simp [Membership.mem] at ha
-            subst ha
-            contradiction
-          | cons head tail =>
-
-
-
-
-            sorry
-
-
-
-        sorry
+        rcases contra with inl | inr
+        . rw [Language.mem_kstar] at inl
+          rcases inl with ⟨l, ab_eq, l_mem⟩
+          unfold L_a at l_mem
+          simp [Membership.mem] at l_mem
+          have b_mem_f : 'b' ∈ l.flatten := by
+            grind
+          have exists_sublist : ∃ v, v ∈ l ∧ 'b' ∈ v := by
+            apply List.exists_of_mem_flatten b_mem_f
+          have not_exists_sublist : ¬(∃ u ∈ l, 'b' ∈ u) := by
+            intro contra
+            rcases contra with ⟨u, u_mem, b_mem⟩
+            have a : u = ['a'] := by apply l_mem u; exact u_mem
+            grind
+          contradiction
+        . rw [Language.mem_kstar] at inr
+          rcases inr with ⟨l, ab_eq, l_mem⟩
+          unfold L_b at l_mem
+          simp [Membership.mem] at l_mem
+          have a_mem_f : 'a' ∈ l.flatten := by
+            grind
+          have exists_sublist : ∃ v, v ∈ l ∧ 'a' ∈ v := by
+            apply List.exists_of_mem_flatten a_mem_f
+          have not_exists_sublist : ¬(∃ u ∈ l, 'a' ∈ u) := by
+            intro contra
+            rcases contra with ⟨u, u_mem, a_mem⟩
+            have b : u = ['b'] := by apply l_mem u; exact u_mem
+            grind
+          contradiction
 
       have mem : ab_word ∈ L_ab* := by
         unfold ab_word
@@ -281,23 +289,95 @@ section Exercise2
           . simp
           . intro w w_mem
             simp [Membership.mem]
-            rcases w_mem
-            . apply Or.inl
-              rfl
-            . apply Or.inr
+            simp_all
 
-              sorry
+      intro contra
+      apply n_mem
+      symm at contra
+      rw [contra]
+      exact mem
 
+theorem ex_2d_3 (L : Language Sigma) : (L*)* = L* := by
+  apply Set.ext
+  intro w
+  constructor
+  . intro w_mem
+    rw [Language.mem_kstar] at w_mem
+    rcases w_mem with ⟨l, w_eq, u_mem⟩
+    rw [Language.mem_kstar]
+
+    sorry
+  . intro w_mem
+    rw [Language.mem_kstar] at w_mem
+    rcases w_mem with ⟨l, w_eq, l_mem⟩
+    rw [Language.mem_kstar]
+    exists l
+    constructor
+    .
+      sorry
+    . intro u u_mem
+      specialize l_mem u
+      have u_mem_L : u ∈ L := l_mem u_mem
+      --rw [← first_power] at u_mem_L
       sorry
 
+theorem ex_2e (L₁ L₂ : Language Sigma) : (L₁* ∪ L₂*)* = (L₁ ∪ L₂)* := by
+  apply Set.ext
+  intro w
+  constructor
+  . intro w_mem
+    rw [Language.mem_kstar] at w_mem
+    rcases w_mem with ⟨l, w_eq, l_mem⟩
+    -- die us in l können wiederum als liste von wörtern betrachtet werden
+    have kstar_union (u : Word Sigma) : u ∈ L₁* ∪ L₂* → ∃ (l' : List (Word Sigma)), u = l'.flatten ∧ ((∀ v ∈ l', v ∈ L₁) ∨ (∀ v ∈ l', v ∈ L₂)) := by
+      intro u_mem
+      rcases u_mem with inl | inr
+      . rw [Language.mem_kstar] at inl
+        rcases inl with ⟨l', u_eq, l'_mem⟩
+        exists l'
+        constructor
+        . exact u_eq
+        . apply Or.inl
+          exact l'_mem
+      . rw [Language.mem_kstar] at inr
+        rcases inr with ⟨l', u_eq, l'_mem⟩
+        exists l'
+        constructor
+        . exact u_eq
+        . apply Or.inr
+          exact l'_mem
 
-
-theorem only_a : ∀ w, w ∈ L_a^n → ∀ c ∈ w, c = 'a' := by
-              intro w w_mem c c_mem
-              rw [Language.mem_pow] at w_mem
-              rcases w_mem with ⟨l, l_eq, l_len, u_mem⟩
-
-              sorry
+    rw [Language.mem_kstar]
+    sorry
+  . intro w_mem
+    have L1_subset : L₁ ⊆ L₁* := by
+        intro y y_mem
+        exists 1
+        rw [first_power]
+        exact y_mem
+    have L2_subset : L₂ ⊆ L₂* := by
+      intro y y_mem
+      exists 1
+      rw [first_power]
+      exact y_mem
+    have union_subset : L₁ ∪ L₂ ⊆ L₁* ∪ L₂* := by
+      intro x x_mem
+      rcases x_mem with inl | inr
+      . constructor
+        apply L1_subset; exact inl
+      . apply Or.inr
+        apply L2_subset; exact inr
+    rw [Language.mem_kstar] at w_mem
+    rcases w_mem with ⟨l, w_eq, l_mem⟩
+    rw [Language.mem_kstar]
+    exists l
+    constructor
+    . exact w_eq
+    . intro u u_mem
+      have u_mem_union : u ∈ L₁ ∪ L₂ := by
+        apply l_mem u; exact u_mem
+      apply union_subset
+      exact u_mem_union
 
   end a2
 

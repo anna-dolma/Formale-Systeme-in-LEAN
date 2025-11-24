@@ -527,9 +527,12 @@ theorem add_exp [BEq Sigma] (L : Language Sigma) (m n : Nat) : (L^n) * L^m = L^(
         simp
         -- to do: l = l1 ++ l2 -> sublisten definieren
         --rw [List.take_append]
-        --rw [← List.take_append_drop]
-
-        sorry
+        --
+        -- zeigen, was die länge von drop n l ist -> length_drop
+        rw [← List.length_drop]
+        -- take_length -> take endet nichts mehr (nimmt alle), argument angeben (list.drop n l),
+        conv => right; right; rw [List.take_length]
+        rw [List.take_append_drop]
 
 theorem kstar_plus (L : Language Sigma) : L⁺ = L * L* := by
   apply Set.ext
