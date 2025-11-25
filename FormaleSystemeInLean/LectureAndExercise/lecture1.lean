@@ -318,8 +318,9 @@ theorem Language.mem_pow (L : Language Sigma) (w : Word Sigma) : w ∈ L^n ↔ �
   . induction n generalizing w with
     | zero =>
       exists []
-      simp
-      trivial
+      constructor
+      . rw [List.flatten_nil]; exact w_mem
+      . simp
     | succ n ih =>
       rcases w_mem with ⟨v, v_mem, x, x_mem, w_eq⟩
       rcases ih x x_mem with ⟨l_x, x_eq, l_x_length, x_mem⟩
@@ -333,46 +334,31 @@ theorem Language.mem_pow (L : Language Sigma) (w : Word Sigma) : w ∈ L^n ↔ �
         cases u_mem with
         | inl u_mem => rw [u_mem]; exact v_mem
         | inr u_mem => apply x_mem; exact u_mem
-  . intro h
-    rcases h with ⟨l, w_eq, w_l, u_mem⟩
+  . rintro ⟨l, w_eq, w_l, u_mem⟩
     induction l generalizing n w with
     | nil =>
-      simp_all
-      subst w_l
-      trivial
+      rw [List.flatten_nil] at w_eq
+      rw [List.length_nil] at w_l
+      rw [w_eq, ← w_l]
+      rfl
     | cons v l lh =>
-      have l_mem : ∀ (u : Word Sigma), u ∈ l → u ∈ L := by
-        intro x x_mem
-        simp at u_mem
-        rcases u_mem with ⟨v_mem, z⟩
-        specialize z x
-        apply z x_mem
-      have l_len : l.length = n-1 := by
-        rw [List.length_cons] at w_l
-        symm at w_l
-        subst w_l
-        simp
-      have tail_case : l.flatten ∈ L^(n-1) :=
-        lh l.flatten rfl l_len l_mem
       have v_mem : v ∈ L := by
-        specialize u_mem v
         apply u_mem
         simp
       have gtz : n > 0 := by
         rw [List.length_cons] at w_l
-        induction n with
-        | zero =>
-          contradiction
-        | succ n ih =>
-          simp
-      have test : w ∈ L * L^(n-1) := by
-        exists v
+        rw [← w_l]; simp
+      rw [pow_as_concat _ gtz]
+      exists v
+      constructor
+      . exact v_mem
+      . exists l.flatten
         constructor
-        . exact v_mem
-        . exists l.flatten
-      rw [pow_as_concat]
-      . exact test
-      . exact gtz
+        . apply lh
+          . rfl
+          . rw [List.length_cons] at w_l; rw [← w_l]; simp
+          . intro u u_mem'; apply u_mem; simp [u_mem']
+        . exact w_eq
 
 theorem Language.mem_kstar (L : Language Sigma) (w : Word Sigma) : w ∈ L* ↔ ∃ l : (List (Word Sigma)), w = l.flatten ∧ (∀ u ∈ l, u ∈ L) := by
     constructor
@@ -404,20 +390,16 @@ theorem Language.mem_kstar (L : Language Sigma) (w : Word Sigma) : w ∈ L* ↔ 
       | nil =>
         exists 0
       | cons v l' ih =>
-        simp at l_mem
+        simp only [List.mem_cons, forall_eq_or_imp] at l_mem
         rcases l_mem with ⟨v_mem, l'_mem⟩
         rw [w_eq]
         have h_tail : l'.flatten ∈ L* := ih (l'.flatten) rfl l'_mem
-        unfold Language.kstar at h_tail
         rcases h_tail with ⟨n, h_tail⟩
         exists n+1
-        have succ_pow : (v :: l').flatten ∈ L * L^n := by
-          simp
-          exists v
-          constructor
-          . exact v_mem
-          . exists l'.flatten
-        apply succ_pow
+        exists v
+        constructor
+        . exact v_mem
+        . exists l'.flatten
 
 -- TO DO: rechenregeln für sprachen
 /-
