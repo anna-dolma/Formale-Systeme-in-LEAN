@@ -228,14 +228,16 @@ theorem de_morgan_rule2 (L₁ L₂ : Language Sigma) : (L₁ ∩ L₂).complemen
     unfold Language.complement at w_mem
     rcases w_mem with ⟨w_mem, w_nmem⟩
     unfold Language.complement
-    constructor
-    constructor
-    . exact w_mem
-    . intro w_mem1
-      unfold Not at w_nmem
-      simp_all
-
-      sorry
+    have w_nmem_inter : w ∉ L₁ ∨ w ∉ L₂ := by
+      false_or_by_contra
+      simp_all; contradiction -- to do: wie bekomme ich das simp_all weg?
+    rcases w_nmem_inter with inl | inr
+    . apply Or.inl
+      constructor
+      exact w_mem; exact inl
+    . apply Or.inr
+      constructor
+      exact w_mem; exact inr
   . intro w_mem
     rcases w_mem with w_mem1 | w_mem2
     rcases w_mem1 with ⟨w_mem1, w_nmem1⟩
@@ -260,8 +262,15 @@ theorem double_complement (L : Language Sigma) : (L.complement).complement = L :
   . intro w_mem
     unfold Language.complement at w_mem
     rcases w_mem with ⟨w_mem, w_nmem⟩
-
-    sorry
+    unfold Not at w_nmem
+    have not_w_nmem : w ∉ L → False := by
+      intro w_nmem_L
+      have w_nmem_c : w ∈ sigma_star \ L := by
+        constructor
+        . exact w_mem
+        . exact w_nmem_L
+      apply w_nmem; exact w_nmem_c
+    simp_all
   . intro w_mem
     unfold Language.complement
     constructor
