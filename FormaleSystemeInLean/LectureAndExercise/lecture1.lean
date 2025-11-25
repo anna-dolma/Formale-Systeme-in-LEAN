@@ -298,7 +298,6 @@ theorem pow_as_concat (L : Language Sigma) : n > 0 → L^n = L * L^(n-1) := by
           | zero =>
             contradiction
           | succ n ih =>
-            simp
             exact y_mem
         . intro y_mem
           rcases y_mem with ⟨p, p_mem, q, q_mem, y_eq⟩
@@ -306,7 +305,6 @@ theorem pow_as_concat (L : Language Sigma) : n > 0 → L^n = L * L^(n-1) := by
           | zero =>
             contradiction
           | succ n ih =>
-            simp at q_mem
             exists p
             constructor
             . exact p_mem
@@ -368,8 +366,11 @@ theorem Language.mem_kstar (L : Language Sigma) (w : Word Sigma) : w ∈ L* ↔ 
       induction n generalizing w with
       | zero =>
         exists []
-        simp
-        exact w_mem
+        simp only [List.flatten_nil]
+        constructor
+        . exact w_mem
+        . intro u u_mem
+          contradiction
       | succ n ih =>
         rcases w_mem with ⟨u, u_mem, v, v_mem, w_eq⟩
         rcases ih v v_mem with ⟨l_w, v_eq, l_mem⟩

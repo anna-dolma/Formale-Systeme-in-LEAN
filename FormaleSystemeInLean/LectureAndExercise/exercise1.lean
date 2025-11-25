@@ -111,7 +111,7 @@ end Exercise1
 
 section Exercise2
 
-  theorem a1 {L1 L2 L3 : Language Sigma} : L1 * (L2 ∪ L3) = L1 * L2 ∪ L1 * L3 := by
+  theorem ex_2_a1 {L1 L2 L3 : Language Sigma} : L1 * (L2 ∪ L3) = L1 * L2 ∪ L1 * L3 := by
     apply Set.ext
     intro w
     constructor
@@ -157,7 +157,7 @@ section Exercise2
     def L2 : Language Char := fun w => w = ['c']
     def L3 : Language Char := fun w => w = ['b', 'c']
 
-    theorem a2 : L1 * (L2 ∩ L3) ≠ (L1 * L2) ∩ (L1 * L3) := by
+    theorem ex_2_a2 : L1 * (L2 ∩ L3) ≠ (L1 * L2) ∩ (L1 * L3) := by
       let prob_word := ['a', 'b', 'c']
 
       have n_mem : prob_word ∉ L1 * (L2 ∩ L3) := by
@@ -183,7 +183,7 @@ section Exercise2
     def L4 : Language Char := fun w => w ∈ L6 * L5*
     def L7 : Language Char := fun w => w ∈ L5* * L6
 
-    theorem a3: L4 = L7 := by
+    theorem ex_2_b : L4 = L7 := by
       unfold L4 L7 L5 L6
       apply Set.ext
       intro w
@@ -200,30 +200,47 @@ section Exercise2
       apply Set.ext
       intro w
       constructor
-      intro w_mem
-      rcases w_mem with ⟨n, w_mem⟩
-      -- fallunterscheidung für n
-      -- case mp ->
-      cases n
-      -- case 0
-      trivial
-      -- case succ
-      exfalso
-      rcases w_mem with ⟨v, v_mem, x, x_mem, w_eq⟩
-      unfold Language.pow at x_mem
-      exact v_mem
-      -- case mpr
-      intro h
-      apply Exists.intro 0
-      trivial
+      . intro w_mem
+        rcases w_mem with ⟨n, w_mem⟩
+        cases n
+        . trivial
+        . exfalso
+          rcases w_mem with ⟨v, v_mem, x, x_mem, w_eq⟩
+          unfold Language.pow at x_mem
+          exact v_mem
+      . intro h
+        apply Exists.intro 0
+        trivial
 
     theorem ex_2d_2 : ((@L_empty Sigma) ∪ L)* = L* := by
       apply Set.ext
       intro w
       constructor
       . intro w_mem
-        sorry
-      . sorry
+        rcases w_mem with ⟨n, w_mem⟩
+        exists n
+        rw [Language.mem_pow] at w_mem
+        rcases w_mem with ⟨l, w_eq, l_len, l_mem⟩
+        rw [Language.mem_pow]
+        exists l
+        constructor
+        . exact w_eq
+        .
+          sorry
+      . intro w_mem
+        rcases w_mem with ⟨n, w_mem⟩
+        exists n
+        rw [Language.mem_pow] at w_mem
+        rcases w_mem with ⟨l, w_eq, l_len, l_mem⟩
+        rw [Language.mem_pow]
+        exists l
+        constructor
+        . exact w_eq
+        . constructor
+          . exact l_len
+          . intro u u_mem
+            apply Or.inr
+            apply l_mem u; exact u_mem
 
     theorem ex_2f_2 [BEq Sigma] : ∀ (L : Language Sigma), L* * L* = L* := by
       intro L
