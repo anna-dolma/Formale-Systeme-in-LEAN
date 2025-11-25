@@ -265,7 +265,7 @@ section Exercise2
         . rw [Language.mem_kstar] at inl
           rcases inl with ⟨l, ab_eq, l_mem⟩
           unfold L_a at l_mem
-          simp [Membership.mem] at l_mem
+          simp only [Membership.mem] at l_mem
           have b_mem_f : 'b' ∈ l.flatten := by
             grind
           have exists_sublist : ∃ v, v ∈ l ∧ 'b' ∈ v := by
@@ -302,7 +302,7 @@ section Exercise2
         . constructor
           . simp
           . intro w w_mem
-            simp [Membership.mem]
+            simp only [Membership.mem]
             simp_all
 
       intro contra
@@ -317,23 +317,14 @@ theorem ex_2d_3 (L : Language Sigma) : (L*)* = L* := by
   constructor
   . intro w_mem
     rw [Language.mem_kstar] at w_mem
-    rcases w_mem with ⟨l, w_eq, u_mem⟩
-    rw [Language.mem_kstar]
+    rcases w_mem with ⟨l, w_eq, l_mem⟩
+    --have u_flatten :
 
     sorry
   . intro w_mem
-    rw [Language.mem_kstar] at w_mem
-    rcases w_mem with ⟨l, w_eq, l_mem⟩
-    rw [Language.mem_kstar]
-    exists l
-    constructor
-    .
-      sorry
-    . intro u u_mem
-      specialize l_mem u
-      have u_mem_L : u ∈ L := l_mem u_mem
-      --rw [← first_power] at u_mem_L
-      sorry
+    exists 1
+    rw [first_power]
+    exact w_mem
 
 theorem ex_2e (L₁ L₂ : Language Sigma) : (L₁* ∪ L₂*)* = (L₁ ∪ L₂)* := by
   apply Set.ext
@@ -392,6 +383,47 @@ theorem ex_2e (L₁ L₂ : Language Sigma) : (L₁* ∪ L₂*)* = (L₁ ∪ L₂
         apply l_mem u; exact u_mem
       apply union_subset
       exact u_mem_union
+
+  theorem ex_2f_1 (L : Language Sigma) : L * L* = L⁺ := by
+    apply Set.ext
+    intro w
+    constructor
+    . intro w_mem
+      rcases w_mem with ⟨v, v_mem, u, u_mem, w_eq⟩
+      rcases u_mem with ⟨n, u_mem⟩
+      exists n+1
+      constructor
+      . simp
+      . rw [pow_as_concat]
+        . exists v
+          constructor
+          . exact v_mem
+          . exists u
+        . simp
+    . intro w_mem
+      rcases w_mem with ⟨n, gtz, w_mem⟩
+      rw [pow_as_concat] at w_mem
+      . rcases w_mem with ⟨v, v_mem, u, u_mem, w_eq⟩
+        exists v
+        constructor
+        . exact v_mem
+        . exists u
+          constructor
+          . exists n-1
+          . exact w_eq
+      . exact gtz
+
+  theorem ex_2f_3 (L : Language Sigma) : L* ∪ L = L* := by
+    apply Set.ext
+    intro w
+    constructor
+    . intro w_mem
+      rcases w_mem with inl | inr
+      . exact inl
+      . exists 1
+        rw [first_power]; exact inr
+    . intro w_mem
+      apply Or.inl; exact w_mem
 
   end a2
 
