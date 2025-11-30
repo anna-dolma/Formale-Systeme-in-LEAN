@@ -1,64 +1,11 @@
 import FormaleSystemeInLean.LectureAndExercise.lecture1
+import FormaleSystemeInLean.LectureAndExercise.lemmas
 
-/-def Set (α : Type u) := α -> Prop
-
--- The following type class instances are just allowing us to use some basic notation like ∅, ∈ or ∪ with the right definitions..
-instance : EmptyCollection (Set α) where
-  emptyCollection := fun _ => False
-
-instance : Membership α (Set α) where
-  mem S a := S a
-
-instance : Union (Set α) where
-  union A B := fun e => e ∈ A ∨ e ∈ B
-
-instance : Inter (Set α) where
-  inter A B := fun e => e ∈ A ∧ e ∈ B
-
-instance : HasSubset (Set α) where
-  Subset A B := ∀ e, e ∈ A -> e ∈ B
-
-instance : HasSSubset (Set α) where
-  SSubset A B := A ⊆ B ∧ ¬ B ⊆ A
-
--- Set extensionality: Two sets are equal if they contain the same elements. This is not something we define but we can prove it!
-theorem Set.ext (X Y : Set α) : (∀ e, e ∈ X ↔ e ∈ Y) -> X = Y := by
-  intro h; apply funext; intro e; apply propext; specialize h e; exact h
-
-
--- Words are merely lists over some alphabet Sigma. In fact, we do not even care about the type of Sigma.
-abbrev Word (Sigma : Type u) := List Sigma
-
--- A language is in turn just a set of words.
-abbrev Language (Sigma : Type u) := Set (Word Sigma)
-
--- From now on, we pick some alphabet Sigma. In fact, we do not even care about the type of Sigma. In can basically be anything.
-variable {Sigma : Type u}
-
--- Let's define concatenation as multiplication.
-instance : Mul (Word Sigma) where
-  mul u v := List.append u v
-
--- Also for Languages
-instance : Mul (Language Sigma) where
-  mul L1 L2 := fun w => ∃ u ∈ L1, ∃ v ∈ L2, w = u * v
-
--- For languages we can also execute concatenation multiple times and define this via Powers.
-def Language.pow (L : Language Sigma) : Nat -> Language Sigma
-| .zero => fun w => w = []
-| .succ n => L * L.pow n
-
-instance : NatPow (Language Sigma) where
-  pow L n := L.pow n
-
--- Finally we define the Kleene Star and notation for it.
-def Language.kstar (L : Language Sigma) : Language Sigma := fun w => ∃ n, w ∈ L^n
-postfix:max "*" => Language.kstar
--/
+set_option linter.unusedSectionVars false
 
 -- NOW FOR THE ACTUAL EXERCISE
 
-variable {Sigma : Type u}
+variable {Sigma : Type u} [BEq Sigma]
 
 section Exercise1
 
@@ -184,12 +131,13 @@ section Exercise2
     def L7 : Language Char := fun w => w ∈ L5* * L6
 
     theorem ex_2_b : L4 = L7 := by
-      unfold L4 L7 L5 L6
+      --unfold L4 L7 L5 L6
       apply Set.ext
       intro w
       constructor
       . intro w_mem
-        simp [Membership.mem]
+        rcases w_mem with ⟨u, u_mem, v, v_mem, w_eq⟩
+        unfold L7
 
         sorry
       . sorry
@@ -212,21 +160,39 @@ section Exercise2
         apply Exists.intro 0
         trivial
 
-    theorem ex_2d_2 : ((@L_empty Sigma) ∪ L)* = L* := by
+    -- to do: an eine andere stelle schieben (bereich für hilfsresultate)
+    theorem L_eps_mem : w ∈ (@L_eps Sigma) ↔ w = [] := by
+      constructor
+      . intro w_mem
+        unfold L_eps at w_mem
+        simp only [Membership.mem] at w_mem
+        exact w_mem
+      . intro w_eq
+        unfold L_eps
+        simp only [Membership.mem]
+        exact w_eq
+
+    theorem ex_2d_2 : ((@L_eps Sigma) ∪ L)* = L* := by
       apply Set.ext
       intro w
       constructor
       . intro w_mem
         rcases w_mem with ⟨n, w_mem⟩
-        exists n
         rw [Language.mem_pow] at w_mem
         rcases w_mem with ⟨l, w_eq, l_len, l_mem⟩
-        rw [Language.mem_pow]
-        exists l
+        rw [Language.mem_kstar]
+        have l_eq : (l.removeAll [[]]).flatten = l.flatten := by
+          symm
+          rw [← List.removeAll_nil_flatten]
+        have l_mem_cases : ∀ u, u ∈ l → u = [] ∨ u ∈ L := by
+            intro u u_mem
+            apply l_mem; exact u_mem
+        exists l.removeAll [[]]
         constructor
-        . exact w_eq
-        .
-          sorry
+        . subst w; symm at l_eq;
+          rw [← List.removeAll_nil_flatten]
+        . intro u u_mem
+          grind
       . intro w_mem
         rcases w_mem with ⟨n, w_mem⟩
         exists n
@@ -242,7 +208,7 @@ section Exercise2
             apply Or.inr
             apply l_mem u; exact u_mem
 
-    theorem ex_2f_2 [BEq Sigma] : ∀ (L : Language Sigma), L* * L* = L* := by
+    theorem ex_2f_2 : ∀ (L : Language Sigma), L* * L* = L* := by
       intro L
       apply Set.ext
       intro w

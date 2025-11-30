@@ -1,3 +1,5 @@
+set_option linter.unusedSectionVars false
+
 def Set (α : Type u) := α -> Prop
 
 -- inspired by mathlib
@@ -78,7 +80,7 @@ theorem Set.union_commutative (X Y : Set α) : X ∪ Y = Y ∪ X := by
       exact e_mem_y
 
 -- From now on, we pick some alphabet Sigma. In fact, we do not even care about the type of Sigma. In can basically be anything.
-variable {Sigma : Type u}
+variable {Sigma : Type u} [BEq Sigma]
 
 -- Words are merely lists over some alphabet Sigma. In fact, we do not even care about the type of Sigma.
 abbrev Word (Sigma : Type u) := List Sigma
@@ -108,6 +110,11 @@ def another_word : Word Char := ['A','l','t','b','a','u','c','h','a','r','m','e'
 #eval 'a'::some_word
 #eval some_word.splitAt 1
 #eval some_word.append []
+
+def expl : List (Word Char) := [['a'], [], ['b']]
+#eval expl.removeAll [[]]
+#eval (expl.removeAll [[]]).flatten = expl.flatten
+
 
 -- For every alphabet Sigma, there is an empty word ε. As we defined words as Lists
 -- with elements of type Sigma, ε is just the empty list [].
@@ -520,71 +527,9 @@ theorem add_exp [BEq Sigma] (L : Language Sigma) (m n : Nat) : (L^n) * L^m = L^(
         conv => right; right; rw [List.take_length]
         rw [List.take_append_drop]
 
-theorem kstar_plus (L : Language Sigma) : L⁺ = L * L* := by
-  apply Set.ext
-  intro w
-  constructor
-  . intro w_mem
-    rcases w_mem with ⟨n, gtz, w_mem⟩
-    induction gtz with
-    | refl =>
-      exists w
-      constructor
-      . simp at w_mem
-        rw [first_power] at w_mem
-        exact w_mem
-      . simp at w_mem
-        exists []
-        constructor
-        . exists 0
-        . rw [first_power] at w_mem
-          symm
-          apply epsilon_concat
-    | step le ih =>
-      rw [Nat.succ_eq_add_one] at w_mem
-      rcases w_mem with ⟨v, v_mem, u, u_mem, w_eq⟩
--- wie kann ich hier eine konkrete zahl für m angeben statt m†?
-      have u_mem_kstar : u ∈ L* := by
-        unfold Language.kstar
-        simp [Membership.mem]
-
-        sorry
-
-      sorry
-
-  . intro w_mem
-    rcases w_mem with ⟨v, v_mem, u, u_mem, w_eq⟩
-    rcases u_mem with ⟨n, u_mem⟩
-    induction n with
-    | zero =>
-      exists 1
-      rcases u_mem
-      simp
-      rw [epsilon_concat] at w_eq
-
-      subst v
-      have help : L = L * L^0 := by
-        apply Set.ext
-        intro y
-        constructor
-        . intro y_mem
-          sorry
-        .
-          sorry
-
-      rw [help] at v_mem
-      trivial
-
-    | succ n ih =>
-      rcases u_mem with ⟨y, y_mem, t, t_mem, u_eq⟩ -- hier überschreiben???
-      exists n+1
-      constructor
-      . simp
-      . rcases w_eq
-        unfold Language.plus at ih
-
-        sorry
-
+-- gleicher beweis wie in übung nur andersrum?
+theorem kstar_plus (L : Language Sigma) : L⁺ = L* * L := by
+  sorry
 
 -- concatenation of languages is distributive over union
 theorem distr_concat_union_l (L₁ L₂ L₃ : Language Sigma) : (L₁ ∪ L₂) * L₃ = (L₁ * L₃) ∪ (L₂ * L₃) := by
