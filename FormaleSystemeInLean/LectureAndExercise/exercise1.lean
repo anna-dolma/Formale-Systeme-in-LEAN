@@ -321,7 +321,7 @@ theorem ex_2d_3 (L : Language Sigma) : (L*)* = L* := by
           constructor
           . exact u_mem
           . exists v
-        . sorry
+        . simp_all
       . simp_all
   . intro w_mem
     exists 1
@@ -333,29 +333,49 @@ theorem ex_2e (L₁ L₂ : Language Sigma) : (L₁* ∪ L₂*)* = (L₁ ∪ L₂
   intro w
   constructor
   . intro w_mem
-    rw [Language.mem_kstar] at w_mem
-    rcases w_mem with ⟨l, w_eq, l_mem⟩
-    -- die us in l können wiederum als liste von wörtern betrachtet werden
-    have kstar_union (u : Word Sigma) : u ∈ L₁* ∪ L₂* → ∃ (l' : List (Word Sigma)), u = l'.flatten ∧ ((∀ v ∈ l', v ∈ L₁) ∨ (∀ v ∈ l', v ∈ L₂)) := by
-      intro u_mem
-      rcases u_mem with inl | inr
-      . rw [Language.mem_kstar] at inl
-        rcases inl with ⟨l', u_eq, l'_mem⟩
-        exists l'
+    rcases w_mem with ⟨n, w_mem⟩
+    induction n generalizing w with
+    | zero =>
+      exists 0
+    | succ n ih =>
+      rw [pow_as_concat] at w_mem
+      . rcases w_mem with ⟨u, u_mem, v, v_mem, w_eq⟩
+        simp only [Nat.add_sub_cancel] at v_mem
+        have v_mem_kstar : v ∈ (L₁ ∪ L₂)* := by apply ih v; exact v_mem
+        have u_mem_kstar : u ∈ (L₁ ∪ L₂)* := by
+          rcases u_mem with inl | inr
+          . rcases inl with ⟨n, u_mem⟩
+            exists n
+            rw [Language.mem_pow] at u_mem
+            rcases u_mem with ⟨l, u_eq, l_len, l_mem⟩
+            rw [Language.mem_pow]
+            exists l
+            constructor
+            . exact u_eq
+            . constructor
+              . exact l_len
+              . intro u u_mem
+                constructor
+                apply l_mem u; exact u_mem
+          . rcases inr with ⟨n, u_mem⟩
+            exists n
+            rw [Language.mem_pow] at u_mem
+            rcases u_mem with ⟨l, u_eq, l_len, l_mem⟩
+            rw [Language.mem_pow]
+            exists l
+            constructor
+            . exact u_eq
+            . constructor
+              . exact l_len
+              . intro u u_mem
+                apply Or.inr
+                apply l_mem u; exact u_mem
+        rw [← ex_2f_2]
+        exists u
         constructor
-        . exact u_eq
-        . apply Or.inl
-          exact l'_mem
-      . rw [Language.mem_kstar] at inr
-        rcases inr with ⟨l', u_eq, l'_mem⟩
-        exists l'
-        constructor
-        . exact u_eq
-        . apply Or.inr
-          exact l'_mem
-
-    rw [Language.mem_kstar]
-    sorry
+        . exact u_mem_kstar
+        . exists v
+      . simp
   . intro w_mem
     have L1_subset : L₁ ⊆ L₁* := by
         intro y y_mem
