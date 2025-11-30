@@ -299,11 +299,30 @@ theorem ex_2d_3 (L : Language Sigma) : (L*)* = L* := by
   intro w
   constructor
   . intro w_mem
-    rw [Language.mem_kstar] at w_mem
-    rcases w_mem with ⟨l, w_eq, l_mem⟩
-    --have u_flatten :
-
-    sorry
+    rcases w_mem with ⟨n, w_mem⟩
+    induction n generalizing w with
+    | zero =>
+      exists 0
+    | succ n ih =>
+      rw [pow_as_concat] at w_mem
+      . rcases w_mem with ⟨u, u_mem, v, v_mem, w_eq⟩
+        have w_mem' : w ∈ L*^(n+1) := by
+          rw [pow_as_concat]
+          . exists u
+            constructor
+            . exact u_mem
+            . exists v
+          . simp_all
+        rw [pow_as_concat] at w_mem'
+        simp only [Nat.add_sub_cancel] at v_mem
+        have v_mem_kstar : v ∈ L* := by apply ih v; exact v_mem
+        . rw [← ex_2f_2]
+          exists u
+          constructor
+          . exact u_mem
+          . exists v
+        . sorry
+      . simp_all
   . intro w_mem
     exists 1
     rw [first_power]
