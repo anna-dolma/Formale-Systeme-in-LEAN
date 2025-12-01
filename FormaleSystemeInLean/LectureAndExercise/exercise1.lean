@@ -181,9 +181,7 @@ section Exercise2
         rw [Language.mem_pow] at w_mem
         rcases w_mem with ⟨l, w_eq, l_len, l_mem⟩
         rw [Language.mem_kstar]
-        have l_eq : (l.removeAll [[]]).flatten = l.flatten := by
-          symm
-          rw [← List.removeAll_nil_flatten]
+        have l_eq : (l.removeAll [[]]).flatten = l.flatten := by apply List.removeAll_nil_flatten
         have l_mem_cases : ∀ u, u ∈ l → u = [] ∨ u ∈ L := by
             intro u u_mem
             apply l_mem; exact u_mem
@@ -331,6 +329,10 @@ theorem ex_2d_3 (L : Language Sigma) : (L*)* = L* := by
 theorem ex_2e (L₁ L₂ : Language Sigma) : (L₁* ∪ L₂*)* = (L₁ ∪ L₂)* := by
   apply Set.ext
   intro w
+
+  -- maybe we can be closer to the exercise solution by using something like the following as a helper result
+  have aux : ∀ w, w ∈ (L₁* ∪ L₂*)* ↔ ∃ (l : List (List (Word Sigma))), w = l.flatten.flatten ∧ ∀ u ∈ l, ((∀ x ∈ u, x ∈ L₁) ∨ (∀ x ∈ u, x ∈ L₂)) := by sorry
+
   constructor
   . intro w_mem
     rcases w_mem with ⟨n, w_mem⟩
