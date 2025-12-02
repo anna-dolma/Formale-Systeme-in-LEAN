@@ -80,7 +80,7 @@ theorem Set.union_commutative (X Y : Set α) : X ∪ Y = Y ∪ X := by
       exact e_mem_y
 
 -- From now on, we pick some alphabet Sigma. In fact, we do not even care about the type of Sigma. In can basically be anything.
-variable {Sigma : Type u} [BEq Sigma]
+variable {Sigma : Type u} [BEq Sigma] -- geht auch decidable equality
 
 -- Words are merely lists over some alphabet Sigma. In fact, we do not even care about the type of Sigma.
 abbrev Word (Sigma : Type u) := List Sigma
@@ -93,6 +93,12 @@ def Alphabet : Set Char := fun σ : Char => σ = 'a' ∨ σ = 'b'
 -- Let's define concatenation as multiplication.
 instance : Mul (Word Sigma) where
   mul u v := List.append u v
+
+theorem Word.mul_eq (u v : Word Sigma) : u * v = u++v := by
+  trivial
+
+theorem Word.mul_assoc (u v w : Word Sigma) : (u * v) * w = u * (v * w) := by
+  simp only [mul_eq]; rw [List.append_assoc]
 
 /-instance [BEq Sigma] : HMul Sigma (Word Sigma) (Word Sigma) where
   hMul σ w := List.insert σ w -/
@@ -167,9 +173,55 @@ theorem L_eps_subset : ∀ (L : Language Sigma), L_empty ⊆ L := by
   intro w w_mem
   trivial
 
+theorem L_eps_mem : w ∈ (@L_eps Sigma) ↔ w = [] := by
+  constructor
+  . intro w_mem
+    unfold L_eps at w_mem
+    simp only [Membership.mem] at w_mem
+    exact w_mem
+  . intro w_eq
+    unfold L_eps
+    simp only [Membership.mem]
+    exact w_eq
+
 -- Concatenation of Languages
 instance : Mul (Language Sigma) where
   mul L1 L2 := fun w => ∃ u ∈ L1, ∃ v ∈ L2, w = u * v
+
+theorem Language.mul_assoc (L₁ L₂ L₃ : Language Sigma) : (L₁ * L₂) * L₃ = L₁ * (L₂ * L₃) := by
+  apply Set.ext
+  intro w
+  constructor
+  . intro w_mem
+    rcases w_mem with ⟨u, u_mem, v, v_mem, w_eq⟩
+    rcases u_mem with ⟨x, x_mem, y, y_mem, u_eq⟩
+    exists x
+    constructor
+    . exact x_mem
+    . exists y*v
+      constructor
+      . exists y
+        constructor
+        . exact y_mem
+        . exists v
+      . rw [← Word.mul_assoc]
+        subst u
+        exact w_eq
+  . intro w_mem
+    rcases w_mem with ⟨u, u_mem, v, v_mem, w_eq⟩
+    rcases v_mem with ⟨x, x_mem, y, y_mem, v_eq⟩
+    exists u*x
+    constructor
+    . exists u
+      constructor
+      . exact u_mem
+      . exists x
+    . exists y
+      constructor
+      . exact y_mem
+      . subst v
+        rw [Word.mul_assoc]
+        exact w_eq
 
 -- Complement
 def Language.complement (L : Language Sigma) : Language Sigma :=
@@ -459,7 +511,7 @@ theorem first_power (L : Language Sigma) : L^1 = L := by
 theorem mul_eq_append (u v : Word Sigma) : u * v = u++v := by rfl
 
 -- product rule for exponents
-theorem add_exp [BEq Sigma] (L : Language Sigma) (m n : Nat) : (L^n) * L^m = L^(m+n) := by
+theorem add_exp [BEq Sigma] (L : Language Sigma) (m n : Nat) : (L^n) * L^m = L^(n+m) := by
   apply Set.ext
   intro w
   constructor
@@ -479,7 +531,7 @@ theorem add_exp [BEq Sigma] (L : Language Sigma) (m n : Nat) : (L^n) * L^m = L^(
       . rw [mul_eq_append]
         rw [List.length_append]
         subst v_length u_length
-        apply Nat.add_comm
+        rfl
       . intro x x_mem
         rw [mul_eq_append] at x_mem
         have x_mem_l : ∀ (u : Word Sigma), u ∈ l_v++l_u → u ∈ L := by
