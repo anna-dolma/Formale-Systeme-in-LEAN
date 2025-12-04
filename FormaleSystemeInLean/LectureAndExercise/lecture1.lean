@@ -33,6 +33,7 @@ instance : SDiff (Set α) where
 theorem Set.ext (X Y : Set α) : (∀ e, e ∈ X ↔ e ∈ Y) -> X = Y := by
   intro h; apply funext; intro e; apply propext; specialize h e; exact h
 
+def Set.powerset (α : Type u) (S : Set α) := fun x => x ⊆ S
 
 -- TO DO: für Mengen
 /-
