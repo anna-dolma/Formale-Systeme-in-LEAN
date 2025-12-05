@@ -5,10 +5,10 @@ structure DFA (Q : Type u) (Sigma : Type v) [Fintype Q] [Fintype Sigma] where
   q0 : Q
   F : List Q
 
-structure TotalDFA (Q : Type u) (Sigma : Type v) [Fintype Q] [Fintype Sigma] extends DFA Q Sigma where
-  totality: ∀q, ∀a, Option.isSome (δ q a)
-  garbage_state: Q
-
+structure TotalDFA (Q : Type u) (Sigma : Type v) [Fintype Q] [Fintype Sigma] where
+  δ: Q → Sigma → Q
+  q0: Q
+  F: List Q
 
 structure NFA (Q : Type u) (Sigma : Type v) [Fintype Q] [Fintype Sigma] where
   δ: Q -> Sigma → List Q
@@ -20,6 +20,13 @@ variable {Q : Type u} {Sigma : Type v} [Fintype Q] [Fintype Sigma]
 def DFA.δ_word (dfa : DFA Q Sigma) (q : Q) : (Word Sigma) -> Option Q
 | .nil => .some q
 | .cons a v => (dfa.δ q a).bind (fun q' => dfa.δ_word q' v)
+
+def TotalDFA.δ_word (t_dfa : TotalDFA Q Sigma) (q : Q) : (Word Sigma) → Q
+  | .nil => q
+  | .cons a v => t_dfa.δ_word (t_dfa.δ q a) v
+
+def TotalDFA.Language (t_dfa : TotalDFA Q Sigma) : Language Sigma :=
+  fun w => t_dfa.δ_word t_dfa.q0 w ∈ t_dfa.F
 
 def DFA.Language (dfa : DFA Q Sigma) : Language Sigma :=
   fun w => ∃ qf, dfa.δ_word dfa.q0 w = some qf ∧ qf ∈ dfa.F
@@ -41,37 +48,41 @@ def NFA.Language (nfa : NFA Q Sigma) : Language Sigma :=
 -- Beweis für: Es gibt einen akzeptierenden Lauf für w genau dann wenn δ(Q₀, w) ∩ F = ∅.
 -- Äquivalenz von NFAs und DFAs mittels Potenzmengenkonstruktion
 
-def DFA.to_totalDFA (M : DFA Q Sigma) (qₜ : Q) : TotalDFA Q Sigma where
-  garbage_state := qₜ
+def DFA.to_totalDFA (M : DFA Q Sigma) [Fintype (Option Q)] : TotalDFA (Option Q) Sigma where
   δ := fun q a =>
-    match M.δ q a with
-    | .some q => some q
-    | .none => some qₜ
-  q0 := M.q0
-  F := M.F
-  totality := by grind
+    match q with
+      | none => none
+      | some q =>
+        match M.δ q a with
+        | none   => none
+        | some q' => some q'
+  q0 := .some M.q0
+  F := M.F.map fun q => some q
 
-theorem totalDFA_eq_DFA (M₁ : DFA Q Sigma) (qₜ : Q) : M₁.Language = (M₁.to_totalDFA qₜ).Language := by
+theorem a (M : DFA Q Sigma) (q : Q) [Fintype (Option Q)] : q ∈ M.F ↔ some q ∈ M.to_totalDFA.F := by
+  constructor
+  . intro q_mem
+    unfold DFA.to_totalDFA
+    grind
+  . intro q_mem
+    unfold DFA.to_totalDFA at q_mem
+    grind
+
+theorem totalDFA_eq_DFA (M : DFA Q Sigma) [Fintype (Option Q)] : M.Language = (M.to_totalDFA).Language := by
   apply Set.ext
   intro w
   constructor
   . intro w_mem
-    rcases w_mem with ⟨q, δ_eq, q_mem_f⟩
-    exists q
-    constructor
-    . symm at δ_eq
-      rw [δ_eq]
-      induction w with
-      | nil =>
-        trivial
-      | cons σ w' ih =>
-        unfold DFA.δ_word at δ_eq
-        unfold DFA.δ_word
-        simp only [DFA.to_totalDFA]
+    rcases w_mem with ⟨qf, w_acc, qf_mem⟩
+    induction w generalizing qf with
+    | nil =>
+      simp only [DFA.δ_word] at w_acc
+      unfold TotalDFA.Language TotalDFA.δ_word
+      simp only [Membership.mem]
+      simp at w_acc
+      rw [a] at qf_mem
+      rw [DFA.to_totalDFA]
 
-
-
-        sorry
-
-    . trivial
+      sorry
+    | cons a v ih => sorry
   . sorry
