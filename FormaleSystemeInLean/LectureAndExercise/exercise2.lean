@@ -1,4 +1,3 @@
---import FormaleSystemeInLean.LectureAndExercise.exercise1
 import FormaleSystemeInLean.LectureAndExercise.lecture1
 
 

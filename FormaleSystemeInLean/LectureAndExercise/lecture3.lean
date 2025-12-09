@@ -26,15 +26,6 @@ def TotalDFA.Language (t_dfa : TotalDFA Q Sigma) : Language Sigma :=
 def DFA.Language (dfa : DFA Q Sigma) : Language Sigma :=
   fun w => ∃ qf, dfa.δ_word dfa.q0 w = some qf ∧ qf ∈ dfa.F
 
--- TO DO VL 3 und 4:
--- totale übergänge, beweis, dass dfa_total = dfa
--- VL4: NFAs mit nur einem Start-/Endzustand sind äquivalent zu normalen NFAs
--- NFA δ für Wörter?
--- Beweis für: Es gibt einen akzeptierenden Lauf für w genau dann wenn δ(Q₀, w) ∩ F = ∅.
--- Äquivalenz von NFAs und DFAs mittels Potenzmengenkonstruktion
--- VL 4, Folie 30: NFAs können exponentiell kleiner sein als DFAs (Beispiel)
--- und reihenfolge wieder herstellen :|
-
 def DFA.to_totalDFA (M : DFA Q Sigma) : TotalDFA (Option Q) Sigma where
   /-δ := fun q a =>
     match q with
@@ -110,7 +101,6 @@ theorem totalDFA_eq_DFA (M : DFA Q Sigma) : M.Language = (M.to_totalDFA).Languag
     rcases w_mem with ⟨qf, w_acc, qf_mem⟩
     rw [δ_word_eq_δ_word] at w_acc
     rw [final_iff_final] at qf_mem
-    --unfold TotalDFA.Language
     have aux : M.to_totalDFA.q0 = some M.q0 := by simp only [DFA.to_totalDFA]
     simp only [Membership.mem, aux]
     rw [w_acc]

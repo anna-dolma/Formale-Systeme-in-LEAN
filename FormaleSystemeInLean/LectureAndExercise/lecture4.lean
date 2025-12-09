@@ -3,6 +3,11 @@ import FormaleSystemeInLean.LectureAndExercise.lecture3
 
 set_option linter.unusedSectionVars false
 
+-- TO DO VL 4:
+-- VL4: NFAs mit nur einem Start-/Endzustand sind äquivalent zu normalen NFAs (nur evtl.)
+-- Äquivalenz von NFAs und DFAs mittels Potenzmengenkonstruktion
+-- VL 4, Folie 30: NFAs können exponentiell kleiner sein als DFAs (Beispiel)
+
 structure NFA (Q : Type u) (Sigma : Type v) [Fintype Q] [Fintype Sigma] where
   δ: Q -> Sigma → List Q
   Q0 : List Q
@@ -41,14 +46,15 @@ theorem run_imp_mem_δ (nfa : NFA Q Sigma) (q1 qn : Q) (R : List Q) (w : Word Si
     trivial
   | @step qa qb qc a v r qb_mem hr =>
     have aux : qc ∈ nfa.δ_word (nfa.δ qa a) v := hr (nfa.δ qa a) qb_mem
-    unfold NFA.δ_word-- at aux
+    unfold NFA.δ_word
     have aux2 : ∀ q, q ∈ nfa.δ qa a → q ∈ (List.flatMap (fun x => nfa.δ x a) R) := by
       intro q q_mem
       rw [List.mem_flatMap]
       exists qa
     grind
 
-theorem run_from_δ_word (nfa : NFA Q Sigma) (qn : Q) (R : List Q) (w : Word Sigma) : qn ∈ nfa.δ_word R w → ∃ (q1 : Q) (r : nfa.Run q1 qn w), q1 ∈ R := by
+-- given a set of states R and a state qn ∈ δ(R, w) we can also construct a run for w starting with a state in R.
+theorem run_from_δ_word (nfa : NFA Q Sigma) (qn : Q) (R : List Q) (w : Word Sigma) : qn ∈ nfa.δ_word R w → ∃ (q1 : Q) (_ : nfa.Run q1 qn w), q1 ∈ R := by
   intro qn_mem
   induction w generalizing R with
   | nil =>
@@ -68,8 +74,8 @@ theorem run_from_δ_word (nfa : NFA Q Sigma) (qn : Q) (R : List Q) (w : Word Sig
     exists q'
     exists NFA.Run.step r' q'_memd
 
--- Equality of the two different definitions of the language accepted by an NFA: An NFA has an accepting run q0...qf on a word w iff the set
--- of states reachable from q0 ∈ Q0 contains a qf ∈ F.
+-- Using the two previous results, we can show that the two different definitions for the language accepted by an NFA are equal:
+-- An NFA has an accepting run q0...qf on a word w iff the set of states reachable from q0 ∈ Q0 contains a qf ∈ F.
 theorem acc_run_iff_δ_word_contains_final (nfa : NFA Q Sigma) (w : Word Sigma) : w ∈ nfa.Language ↔ ∃ q ∈ nfa.δ_word nfa.Q0 w, q ∈ nfa.F := by
   constructor
   . intro w_mem
