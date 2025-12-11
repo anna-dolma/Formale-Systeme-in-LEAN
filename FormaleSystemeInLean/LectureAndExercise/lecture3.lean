@@ -1,5 +1,20 @@
 import FormaleSystemeInLean.LectureAndExercise.lecture1
 
+-- inspired by mathlib
+class Fintype (α : Type u) where
+  elems : List α
+  complete : ∀ a : α, a ∈ elems
+
+def Fintype.toList (T : Fintype α) : List α :=
+  T.elems
+
+class Powertype (α : Type u) (T : Fintype α) where
+  elems: List (List α)
+  complete: ∀ (l : List α), l.length ≤ T.elems.length → l ∈ elems
+
+variable {γ : Type u} {G : Fintype Gamma}
+#check Fintype.toList G
+
 structure DFA (Q : Type u) (Sigma : Type v) [Fintype Q] [Fintype Sigma] where
   δ: Q -> Sigma → Option Q
   q0 : Q

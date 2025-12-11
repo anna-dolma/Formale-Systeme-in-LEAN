@@ -2,11 +2,6 @@ set_option linter.unusedSectionVars false
 
 def Set (α : Type u) := α -> Prop
 
--- inspired by mathlib
-class Fintype (α : Type u) where
-  elems : List α
-  complete : ∀ a : α, a ∈ elems
-
 -- The following type class instances are just allowing us to use some basic notation like ∅, ∈ or ∪ with the right definitions..
 instance : EmptyCollection (Set α) where
   emptyCollection := fun _ => False
@@ -735,3 +730,41 @@ theorem succ_pow_empty : ∀ n, n > 0 → Language.pow L_empty n = @L_empty Sigm
   | step =>
     simp
     apply empty_mul
+
+theorem kstar_eq_plus_union_eps (L : Language Sigma) : L* = L⁺ ∪ L_eps := by
+  apply Set.ext
+  intro w
+  constructor
+  . intro w_mem
+    rcases w_mem with ⟨n, w_mem⟩
+    cases n with
+    | zero =>
+      apply Or.inr
+      trivial
+    | succ n =>
+      apply Or.inl
+      exists n+1
+      constructor
+      . simp
+      . exact w_mem
+  . intro w_mem
+    rcases w_mem with ⟨n, gtz, w_mem⟩
+    . exists n
+    . exists 0
+
+theorem kstar_eq_L_minus_eps (L : Language Sigma) : L* = (L\L_eps)* := by
+  apply Set.ext
+  intro w
+  constructor
+  . intro w_mem
+    rcases w_mem with ⟨n, w_mem⟩
+    --rw [Language.mem_pow]
+    cases w with
+    | nil =>
+      exists 0
+    | cons a v =>
+      exists n
+      sorry
+  . intro w_mem
+
+    sorry
