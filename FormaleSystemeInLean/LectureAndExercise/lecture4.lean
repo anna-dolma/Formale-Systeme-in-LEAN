@@ -13,7 +13,7 @@ structure NFA (Q : Type u) (Sigma : Type v) [Fintype Q] [Fintype Sigma] where
   Q0 : List Q
   F : List Q
 
-variable {Q : Type u} {Sigma : Type v} [Fintype Q] [Fintype Sigma] [Fintype (Option Q)]
+variable {Q : Type u} {Sigma : Type v} [Fintype Q] [Fintype Sigma] [Fintype (Option Q)] [BEq Q]
 
 def NFA.δ_word (nfa : NFA Q Sigma) (R : List Q) : (Word Sigma) → List Q
   | .nil => R
@@ -100,7 +100,46 @@ def DFA.to_NFA (M : DFA Q Sigma) : NFA Q Sigma where
   Q0 := [M.q0]
   F := M.F
 
-def NFA.to_DFA (M : NFA Q Sigma) [Fintype (List Q)] : DFA (List Q) Sigma where
-  δ := sorry
+def reachable_from (M : NFA Q Sigma) (_ : List Q) (a : Sigma) : List Q  → List Q
+  | .nil => .nil
+  | .cons q R => (q::R.flatMap (fun q => M.δ q a)).eraseDups
+
+
+variable {Q' : Type u} {T : Fintype Q'} {Φ : @Power Q' T} [BEq Q'] [Fintype (@Power Q' T)] [Fintype (List Q')]
+
+def NFA.to_DFA (M : NFA Q' Sigma) [Fintype (List Q)] : DFA (List Q') Sigma where
+  δ := fun R a => (R.flatMap (fun q => M.δ q a)).eraseDups
   q0 := M.Q0
-  F := sorry -- Liste mit allen möglichen Listen die aus q ∈ M.F gebildet werden können
+  F := Φ.elems.filter (fun x => x.any (M.F.contains · ))
+
+theorem to_NFA_lang_eq (M : DFA Q Sigma) : M.to_NFA.Language = M.Language := by
+  apply Set.ext
+  intro w
+  constructor
+  . intro w_mem
+    simp only [DFA.Language, Membership.mem]
+    rw [acc_run_iff_δ_word_contains_final] at w_mem
+    rcases w_mem with ⟨qf, qf_memd, qf_memf⟩
+    simp only [DFA.to_NFA] at qf_memf
+    exists qf
+    constructor
+    . induction w with
+      | nil =>
+        simp only [NFA.δ_word, DFA.to_NFA, List.mem_singleton] at qf_memd
+        simp only [DFA.δ_word, Option.some_inj]
+        rw [qf_memd]
+      | cons a v ih =>
+        simp only [NFA.δ_word] at qf_memd
+        simp only [DFA.δ_word]
+        sorry
+    . trivial
+  . intro w_mem
+    simp only [DFA.Language, Membership.mem] at w_mem
+    rcases w_mem with ⟨qf, qf_eq, qf_memf⟩
+    unfold DFA.δ_word at qf_eq
+    rw [acc_run_iff_δ_word_contains_final]
+    exists qf
+    constructor
+    .
+      sorry
+    . sorry
