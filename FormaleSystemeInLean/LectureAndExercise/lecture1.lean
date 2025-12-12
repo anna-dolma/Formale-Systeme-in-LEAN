@@ -1,3 +1,4 @@
+import FormaleSystemeInLean.LectureAndExercise.lemmas
 set_option linter.unusedSectionVars false
 
 def Set (α : Type u) := α -> Prop
@@ -106,7 +107,7 @@ def some_word : Word Char := ['S','t','a','u','b','e','c','k','e','n']
 def another_word : Word Char := ['A','l','t','b','a','u','c','h','a','r','m','e']
 
 #eval List.IsPrefix ['S','t','a','u','b'] some_word
----#eval List.IsInfix ['t','a','u','b'] some_word
+--#eval List.IsInfix ['t','a','u','b'] some_word
 #eval List.IsSuffix ['e','c','k','e','n'] some_word
 
 #eval 'a'::some_word
@@ -731,6 +732,7 @@ theorem succ_pow_empty : ∀ n, n > 0 → Language.pow L_empty n = @L_empty Sigm
     simp
     apply empty_mul
 
+
 theorem kstar_eq_plus_union_eps (L : Language Sigma) : L* = L⁺ ∪ L_eps := by
   apply Set.ext
   intro w
@@ -752,19 +754,56 @@ theorem kstar_eq_plus_union_eps (L : Language Sigma) : L* = L⁺ ∪ L_eps := by
     . exists n
     . exists 0
 
+
 theorem kstar_eq_L_minus_eps (L : Language Sigma) : L* = (L\L_eps)* := by
   apply Set.ext
   intro w
+
+  have aux : w ∈ (L \ L_eps)* ↔ ∃ (l : List (Word Sigma)), w = (l.removeAll [[]]).flatten ∧ ∀ u, u ∈ l → u ∈ L := by
+    constructor
+    . intro w_mem
+      rw [Language.mem_kstar] at w_mem
+      rcases w_mem with ⟨l, w_eq, l_mem⟩
+      exists l
+      constructor
+      . rw [List.removeAll_nil_flatten]
+        exact w_eq
+      . intro u
+        have aux2 : u ∈ L \ L_eps → u ∈ L := by
+          intro u_mem
+          rcases u_mem with ⟨u_mem, _⟩
+          exact u_mem
+        have aux3 := l_mem u
+        intro u_mem
+        grind
+    . intro h
+      rcases h with ⟨l, w_eq, l_mem⟩
+      rw [Language.mem_kstar]
+      exists l.removeAll [[]]
+      constructor
+      . exact w_eq
+      . intro u u_mem
+        constructor
+        . grind
+        . rw [L_eps_mem]
+          grind
+
   constructor
   . intro w_mem
-    rcases w_mem with ⟨n, w_mem⟩
-    --rw [Language.mem_pow]
-    cases w with
-    | nil =>
-      exists 0
-    | cons a v =>
-      exists n
-      sorry
+    rw [aux]
+    rw [Language.mem_kstar] at w_mem
+    rcases w_mem with ⟨l, w_eq, l_mem⟩
+    exists l
+    constructor
+    . rw [List.removeAll_nil_flatten]
+      exact w_eq
+    . exact l_mem
   . intro w_mem
-
-    sorry
+    rw [aux] at w_mem
+    rcases w_mem with ⟨l, w_eq, l_mem⟩
+    rw [Language.mem_kstar]
+    exists l
+    constructor
+    . rw [← List.removeAll_nil_flatten]
+      exact w_eq
+    . exact l_mem

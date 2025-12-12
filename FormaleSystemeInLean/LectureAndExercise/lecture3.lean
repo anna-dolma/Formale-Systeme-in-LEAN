@@ -9,6 +9,16 @@ class Power (α : Type u) (T : Fintype α) where
   elems: List (List α)
   complete: ∀ (l : List α), l.length ≤ T.elems.length → l ∈ elems
 
+def Powertype (α : Type u) := Set α
+
+def List.power (l : List α) : List (List α) := sorry -- powerset but defined on lists
+
+def List.toSet (l : List α) : Set α := fun e => e ∈ l
+
+instance (α : Type u) [Fintype α] : Fintype (Powertype α) where
+  elems := Fintype.elems.power.map (List.toSet)
+  complete := by sorry
+
 structure DFA (Q : Type u) (Sigma : Type v) [Fintype Q] [Fintype Sigma] where
   δ: Q -> Sigma → Option Q
   q0 : Q
