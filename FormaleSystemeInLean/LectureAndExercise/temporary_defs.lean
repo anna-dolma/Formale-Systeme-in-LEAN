@@ -9,25 +9,14 @@ class Fintype (α : Type u) where
 
 def List.toSet (l : List α) : Set α := fun e => e ∈ l
 
-def Set.map (f : α → β) (S : Set α) [DecidablePred S] [Fintype α] : Set β :=
-  ((Fintype.elems.filter (· ∈ S)).map (fun x => f x)).toSet
+def Set.map (f : α → β) (S : Set α) [Fintype α] : Set β :=
+  fun b => ∃ (a : α), a ∈ S ∧ f a = b
 
 def Set.toList (S : Set α) [DecidablePred S] [Fintype α] : List α :=
   Fintype.elems.filter (· ∈ S)
 
-theorem Set.mem_map (f : α → β) (S : Set α) (b : β) [DecidablePred S] [Fintype α] : b ∈ Set.map f S ↔ ∃ a, a ∈ S ∧ f a = b := by
-  simp only [Set.map]
-  constructor
-  . intro h
-    rcases List.mem_map.mp h with ⟨a, a_mem_f, rfl⟩
-    rcases List.mem_filter.mp a_mem_f with ⟨a_mem, ha_S⟩
-    sorry
-  . intro h
-    rcases h with ⟨a, a_mem, fa_eq⟩
-    unfold List.toSet
-    simp only [Membership.mem]
-
-    sorry
+theorem Set.mem_map (f : α → β) (S : Set α) (b : β) [Fintype α] : b ∈ Set.map f S ↔ ∃ a, a ∈ S ∧ f a = b := by
+  simp only [Set.map, Membership.mem]
 
 structure DFA (Q : Type u) (Sigma : Type v) [Fintype Q] where
   𝓠 : Set Q
@@ -286,18 +275,48 @@ theorem to_DFA_lang_eq (M : NFA Q Sigma) : M.to_TotalDFA.Language = M.Language :
       exists q
 
 def DFA.to_NFA (M : DFA Q Sigma) : NFA Q Sigma where
-  𝓠 := sorry
+  𝓠 := M.𝓠
   δ := fun q a =>
     match M.δ q a with
     | none => ∅
-    | some q => fun q => q = q
+    | some q => fun x => x = q
   Q0 := fun q => q = M.q0
   F := M.F
+
+def TotalDFA.to_NFA (M : TotalDFA Q Sigma) : NFA Q Sigma where
+  𝓠 := M.𝓠
+  δ := fun q a => fun q' => q' = M.δ q a
+  Q0 := fun q => q = M.q0
+  F := M.F
+
+--theorem to_NFA_δ_ne_none (M : DFA Q Sigma) : M.to_NFA.δ q a ≠ none := by sorry
 
 theorem to_NFA_lang_eq (M : DFA Q Sigma) : M.to_NFA.Language = M.Language := by
   apply Set.ext
   intro w
+  rw [acc_run_iff_δ_word_contains_final]
+  unfold DFA.Language
   constructor
+  . intro hq
+    rcases hq with ⟨qf, qf_memd, qf_memf⟩
+    simp only [Membership.mem]
+    --unfold NFA.δ_word at qf_memd
+    simp only [DFA.to_NFA] at qf_memf
+
+    exists qf
+    constructor
+    . cases w with
+      | nil =>
+        rcases qf_memd
+        simp only [DFA.δ_word]
+      | cons a v =>
+        simp only [NFA.δ_word] at qf_memd
+        simp only [DFA.δ_word]
+
+        sorry
+    . exact qf_memf
+  . sorry
+  /-constructor
   . intro w_mem
     simp only [DFA.Language, Membership.mem]
     rw [acc_run_iff_δ_word_contains_final] at w_mem
@@ -324,4 +343,4 @@ theorem to_NFA_lang_eq (M : DFA Q Sigma) : M.to_NFA.Language = M.Language := by
     constructor
     .
       sorry
-    . sorry
+    . sorry -/
