@@ -15,9 +15,6 @@ def Set.map (f : α → β) (S : Set α) [Fintype α] : Set β :=
 def Set.toList (S : Set α) [DecidablePred S] [Fintype α] : List α :=
   Fintype.elems.filter (· ∈ S)
 
-theorem Set.mem_map (f : α → β) (S : Set α) (b : β) [Fintype α] : b ∈ Set.map f S ↔ ∃ a, a ∈ S ∧ f a = b := by
-  simp only [Set.map, Membership.mem]
-
 structure DFA (Q : Type u) (Sigma : Type v) [Fintype Q] where
   𝓠 : Set Q
   δ : Q → Sigma → Option Q
@@ -85,11 +82,9 @@ theorem final_iff_final (M : DFA Q Sigma) (q : Q) [DecidablePred M.F] [Decidable
   constructor
   . intro q_mem
     unfold DFA.to_totalDFA
-    simp only [Set.mem_map]
     exists q
   . intro q_mem
     unfold DFA.to_totalDFA at q_mem
-    simp only [Set.mem_map] at q_mem
     rcases q_mem with ⟨q', q'_mem, sqf_eq⟩
     rw [Option.some_inj] at sqf_eq
     rw [← sqf_eq]
