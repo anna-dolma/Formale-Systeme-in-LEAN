@@ -9,6 +9,165 @@ class Fintype (α : Type u) where
 
 def List.toSet (l : List α) : Set α := fun e => e ∈ l
 
+def l0 : List (List Nat) := []
+def l1 : List (Nat) := [0, 1, 2]
+def l2 : List (List Nat) := [[]]
+#eval l2.map (fun x => l1.map (fun z => x.append [z]))
+#eval (l2.map (fun x => l1.map (fun z => x.append [z]))).flatten
+def l3 := [[0], [1], [2]]
+#eval (l3.map (fun x => l1.map (fun z => x.append [z]))).flatten.map (fun x => x.eraseDups)
+#eval l1.map (fun x => [x])
+
+def l4 : (List Nat) := [0, 1, 2, 3, 4]
+
+def List.powerRec [BEq α] (l : List α) (n : Nat) : List (List α) :=
+  let rec loop : Nat → List (List α) → List (List α)
+    | 0, power => power.append []
+    | n+1, power => loop n (power.append ((power.filter (fun y => y.length = n+1)).map (fun l' => l'.map (fun x => l'.removeAll [x]))).flatten)
+  loop n [l]
+
+def List.power' (l : List α) : List (List α) :=
+  let rec loop : Nat → List (List α) → List (List α)
+    | 0, power => power.concat []
+    | n+1, power => loop n (power.append (power.map (fun x => l.map (fun z => x.append [z]))).flatten)
+  loop l.length [[]]
+
+def List.power (l : List α) : List (List α) :=
+  let rec loop : Nat → List (List α)
+    | 0 => [[]]
+    | n+1 => let prev := loop n; prev ++ (prev.flatMap (fun l' => l.map fun e => e:: l'))
+  loop l.length
+
+def List.power_upto (l : List α) (n : Nat) : List (List α) :=
+  let rec loop : Nat → List (List α)
+    | 0 => [[]]
+    | n+1 => let prev := loop n; prev ++ (prev.flatMap (fun l' => l.map fun e => e:: l'))
+  loop n
+
+def List.powerset_lists [BEq α] (l : List α) : List (List α) :=
+  (List.powerRec l l.length).eraseDups
+
+#eval l4.powerset_lists
+#eval ([[1, 2, 3, 4], [0, 2, 3, 4], [0, 1, 3, 4], [0, 1, 2, 4], [0, 1, 2, 3]].map (fun x => l4.map (fun z => x.append [z]))).flatten
+#eval (l2.map (fun x => l4.map (fun z => x.append [z]))).flatten
+
+/-#eval l4.power'.eraseDups.length
+#eval l4.power.eraseDups
+#eval [1, 2, 3, 4].power.eraseDups.length
+#eval [1].power
+#eval [2, 3].power
+#eval [1, 2, 3, 4, 5, 6, 7].power.eraseDups
+#eval [1, 2, 3].power'.eraseDups.length -/
+#eval [0, 1, 2].power_upto 3
+#eval l0.power_upto 99
+
+theorem nil_power (n : Nat) (l : List α) : l = [] -> l.power_upto n = [[]] := by
+  intro l_eq
+  induction n with
+  | zero =>
+    unfold List.power_upto List.power_upto.loop
+    rfl
+  | succ n ih =>
+    unfold List.power_upto List.power_upto.loop
+    subst l
+    simp -- mit was?
+    unfold List.power_upto at ih
+    rw [ih]
+    simp
+
+theorem elem_power (T : Fintype α) (l : List α) (n : Nat) : n ≤ T.elems.length → l.length = n → l ∈ T.elems.power_upto n := by
+  intro n_le l_len
+  cases h : T.elems with
+  | nil =>
+    rw [nil_power]
+    . cases l with
+    | nil =>
+      grind
+    | cons a s =>
+      cases n with
+      | zero =>
+        grind
+      | succ n =>
+        rw [List.mem_singleton]
+        exfalso
+        have elems_length : T.elems.length = 0 := by
+          rw [List.eq_nil_iff_length_eq_zero] at h
+          exact h
+        rw [elems_length] at n_le
+        contradiction
+    . rfl
+  | cons b s =>
+    induction n generalizing l with
+    | zero =>
+      unfold List.power_upto List.power_upto.loop
+      have l_eq : l = [] := by
+        rw [List.eq_nil_iff_length_eq_zero]
+        exact l_len
+      rw [l_eq]
+      grind
+    | succ n ih =>
+      unfold List.power_upto List.power_upto.loop
+      simp
+      have l_neq_nil : l ≠ [] := by
+        have l_len_gz : l.length > 0 := by
+          rw [← Nat.succ_eq_add_one] at l_len
+          grind
+        rw [List.ne_nil_iff_length_pos]
+        exact l_len_gz
+      have l_eq : ∃ a l', l = a::l' ∧ l'.length = n := by
+        rw [List.ne_nil_iff_exists_cons] at l_neq_nil
+        rcases l_neq_nil with ⟨a, l', l_eq⟩
+        exists a, l'
+        constructor
+        . exact l_eq
+        . grind
+      rcases l_eq with ⟨a, l', l_eq, l'_len⟩
+      have aux : n ≤ T.elems.length := by grind
+      apply Or.inr
+      exists l'
+      constructor
+      . apply ih l' aux l'_len
+      . by_cases ha : a = b
+        . apply Or.inl
+          rw [← ha]
+          exact l_eq
+        . apply Or.inr
+          exists a
+          constructor
+          . have a_mem : a ∈ b::s := by
+              have complete := T.complete
+              specialize complete a
+              rw [h] at complete
+              exact complete
+            grind
+          symm
+          exact l_eq
+
+theorem set_of_list (T : Fintype α) (S : Set α) [DecidablePred S] : ∃ (l : List α), l.toSet = S := by
+  have complete := T.complete
+  exists T.elems.filter (fun a => a ∈ S)
+  apply Set.ext
+  intro a
+  constructor
+  . intro a_mem
+    unfold List.toSet at a_mem
+    simp only [Membership.mem] at a_mem
+
+    sorry
+  . intro a_mem
+    unfold List.toSet
+    simp only [Membership.mem]
+
+
+    sorry
+
+instance (T : Fintype α) [BEq α] : Fintype (Set α) where
+  elems := (T.elems.power_upto T.elems.length).map (fun x => x.toSet)
+  complete := by
+    intro S
+
+    sorry
+
 def Set.map (f : α → β) (S : Set α) [Fintype α] : Set β :=
   fun b => ∃ (a : α), a ∈ S ∧ f a = b
 

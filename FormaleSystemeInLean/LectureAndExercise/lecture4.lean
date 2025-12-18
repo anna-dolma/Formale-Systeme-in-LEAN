@@ -95,6 +95,9 @@ theorem acc_run_iff_δ_word_contains_final (nfa : NFA Q Sigma) (w : Word Sigma) 
 
 def Powertype (α : Type u) := Set α
 
+instance : Membership α (Powertype α) where
+  mem S a := S a
+
 def List.power (l : List α) : List (List α) := sorry -- powerset but defined on lists
 
 def List.toSet (l : List α) : Set α := fun e => e ∈ l
@@ -122,11 +125,13 @@ def NFA.to_DFA (M : NFA Q Sigma) : DFA (Powertype Q) Sigma where
   q0 := M.Q0.toSet
   F := Fintype.elems.filter (fun x => M.F.toSet ∩ x != ∅)
 
--- geht es auch so? Eigentlic müsste ja sowieso ein totaler DFA rauskommen. Außerdem wissen wir ja L(DFA_total) = L(DFA)
+def List.filterPred (l : List α) (P : α -> Prop) [DecidablePred P] : List α :=
+  l.filter (fun a => decide (P a))
+
 def NFA.to_TotalDFA (M : NFA Q Sigma) : TotalDFA (Powertype Q) Sigma where
-  δ := fun R a => (R.toList.flatMap (fun q => M.δ q a)).toSet
+  δ := fun R a => fun q => ∃ r ∈ R, q ∈ M.δ r a--(R.toList.flatMap (fun q => M.δ q a)).toSet
   q0 := M.Q0.toSet
-  F := Fintype.elems.filter (fun x => M.F.toSet ∩ x != ∅)
+  F := Fintype.elems.filter (fun x => M.F.toSet ∩ x != ∅) --(fun R => decide (∃ x, x ∈ R ∧ x ∈ M.F)) --
 
 theorem to_NFA_lang_eq (M : DFA Q Sigma) : M.to_NFA.Language = M.Language := by
   apply Set.ext
@@ -164,65 +169,115 @@ theorem δ_powersetDFA_eq_some (M : NFA Q Sigma) (a : Sigma) (R : Powertype Q) :
   unfold NFA.to_DFA
   grind
 
-theorem δ_word_powersetDFA_eq_some (M : NFA Q Sigma) (w : Word Sigma) (R : Powertype Q) : M.to_DFA.δ_word R w ≠ none := by
-  unfold DFA.δ_word
-  by_cases h : w = []
-  . simp only [h]
-    apply Option.some_ne_none
-  . rw [← Ne.eq_1, List.ne_nil_iff_exists_cons] at h
-    rcases h with ⟨a, v, w_eq⟩
-    simp only [w_eq, NFA.to_DFA]
-
-
-    sorry
-
 theorem δ_NFA_subset_δ_powersetDFA (M : NFA Q Sigma) (a : Sigma) (R : Powertype Q) : q ∈ R.toList → (M.δ q a).toSet ⊆ M.to_TotalDFA.δ R a := by
   intro q_mem
   intro q' q'_mem
   simp only [NFA.to_TotalDFA]
   unfold List.toSet at *
   simp only [Membership.mem] at *
-  apply List.mem_flatMap_of_mem q_mem
-  exact q'_mem
+  --apply List.mem_flatMap_of_mem q_mem
+  --exact q'_mem
+  sorry
 
 theorem δ_NFA_eq_δ_TotalDFA (M : NFA Q Sigma) (a : Sigma) (R : List Q) : M.to_TotalDFA.δ R.toSet a = (M.δ_word R [a]).toSet := by
   simp only [NFA.to_TotalDFA, NFA.δ_word]
-  apply congrArg -- ARRRGGG indeed
+  unfold List.toSet
+  apply funext
+  intro q
+  rw [List.mem_flatMap]
+  rfl
 
-  sorry
-
-theorem δ_word_eq_DFA_NFA (M : NFA Q Sigma) (w : Word Sigma) (R : List Q) [Inhabited (Powertype Q)] [BEq (Powertype Q)] : (M.δ_word R w).toSet = M.to_TotalDFA.δ_word R.toSet w := by
+theorem δ_word_eq_DFA_NFA (M : NFA Q Sigma) (w : Word Sigma) (R : List Q) [BEq (Powertype Q)] : (M.δ_word R w).toSet = M.to_TotalDFA.δ_word R.toSet w := by
   apply Set.ext
   intro q
-  constructor
-  . intro q_mem
-    induction w generalizing q R with
-    | nil =>
-      unfold NFA.δ_word at q_mem
-      grind
-    | cons a v ih =>
-      simp only [NFA.δ_word] at q_mem
-      have aux := ih (List.flatMap (fun x => M.δ x a) R) q q_mem
-      simp only [TotalDFA.δ_word]
-      --unfold List.toSet at *
-      --simp only [Membership.mem] at *
-      sorry
-  . sorry
+  induction w generalizing q R with
+  | nil =>
+    grind
+  | cons a v ih =>
+    simp only [NFA.δ_word]
+    have aux := ih (List.flatMap (fun x => M.δ x a) R) q
+    simp only [TotalDFA.δ_word]
+    rw [δ_NFA_eq_δ_TotalDFA]
+    unfold List.toSet at *
+    simp only [Membership.mem] at *
+    grind
+    --sorry
 
-theorem to_DFA_lang_eq (M : NFA Q Sigma) : M.to_DFA.Language = M.Language := by
+theorem not_empty_contains_element (X : Set α) : X ≠ ∅ -> ∃ e, e ∈ X := by
+  intro neq
+  apply Classical.byContradiction
+  intro contra
+  apply neq
+  apply Set.ext
+  intro e
+  simp only [not_exists] at contra
+  specialize contra e
+  simp only [contra, false_iff]
+  simp [Membership.mem, EmptyCollection.emptyCollection]
+
+theorem empty_eq (A : Set α) : (∀ (x : α), ¬x ∈ A) -> A = ∅ := by
+  intro h
+  apply Set.ext
+  intro a
+  simp only [EmptyCollection.emptyCollection]
+  constructor
+  . intro e_mem
+    simp only [Membership.mem]
+    apply h a
+    exact e_mem
+  . intro e_mem
+    simp only [Membership.mem] at e_mem
+
+theorem nonempty_2 (B : Set α) [BEq (Set α)] [LawfulBEq (Set α)] : B != ∅ -> ∃ a, a ∈ B := by
+  intro neq
+  apply Classical.byContradiction
+  intro contra
+  rw [not_exists] at contra
+  have aux := empty_eq B contra
+  rw [aux] at neq
+  simp at neq
+
+theorem to_DFA_lang_eq (M : NFA Q Sigma) [LawfulBEq (Set Q)] : M.to_TotalDFA.Language = M.Language := by
   apply Set.ext
   intro w
+  unfold TotalDFA.Language
   constructor
   . intro w_mem
-    --rw [acc_run_iff_δ_word_contains_final]
-    unfold DFA.Language at w_mem
-    simp only [Membership.mem] at w_mem
-    rcases w_mem with ⟨q, d_eq, q_mem⟩
-    simp only [NFA.Language, Membership.mem]
-    sorry
-  . sorry
+    rw [acc_run_iff_δ_word_contains_final]
+    simp only [Membership.mem] at *
+    cases w with
+    | nil =>
+      simp only [TotalDFA.δ_word, NFA.to_TotalDFA] at w_mem
+      have aux := List.mem_filter.mp w_mem
+      rcases aux with ⟨r, t⟩
+      have aux2 : ∃ q0, q0 ∈ M.F.toSet ∩ M.Q0.toSet := by
+        apply nonempty_2 (M.F.toSet ∩ M.Q0.toSet)
+        exact t
+      rcases aux2 with ⟨q0, q0_memf, q0_memQ0⟩
+      exists q0
+    | cons a v =>
+      simp only [TotalDFA.δ_word, NFA.to_TotalDFA] at w_mem
 
 
+      --rcases w_mem with ⟨q, q_memd, q_memf⟩
+      /-exists q
+      rw [δ_word_eq_DFA_NFA]
+      -/
+      sorry
+  . intro w_mem
+    rw [acc_run_iff_δ_word_contains_final] at w_mem
+    simp only [Membership.mem]
+    rcases w_mem with ⟨q, q_memd, q_memf⟩
+    cases w with
+    | nil =>
+      unfold NFA.δ_word at q_memd
+      simp only [TotalDFA.δ_word, NFA.to_TotalDFA]
 
+      --exists q
+      sorry
+    | cons a v =>
+      --rw [δ_word_eq_DFA_NFA] at q_memd
+      simp only [TotalDFA.δ_word, NFA.to_TotalDFA]
 
--- ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+      --exists q
+      sorry
