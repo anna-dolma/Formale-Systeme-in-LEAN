@@ -1,35 +1,6 @@
 import FormaleSystemeInLean.LectureAndExercise.lemmas
+import FormaleSystemeInLean.LectureAndExercise.set_powertype
 set_option linter.unusedSectionVars false
-
-def Set (α : Type u) := α -> Prop
-
--- The following type class instances are just allowing us to use some basic notation like ∅, ∈ or ∪ with the right definitions..
-instance : EmptyCollection (Set α) where
-  emptyCollection := fun _ => False
-
-instance : Membership α (Set α) where
-  mem S a := S a
-
-instance : Union (Set α) where
-  union A B := fun e => e ∈ A ∨ e ∈ B
-
-instance : Inter (Set α) where
-  inter A B := fun e => e ∈ A ∧ e ∈ B
-
-instance : HasSubset (Set α) where
-  Subset A B := ∀ e, e ∈ A -> e ∈ B
-
-instance : HasSSubset (Set α) where
-  SSubset A B := A ⊆ B ∧ ¬ B ⊆ A
-
-instance : SDiff (Set α) where
-  sdiff A B := fun e => e ∈ A ∧ ¬(e ∈ B)
-
--- Set extensionality: Two sets are equal if they contain the same elements. This is not something we define but we can prove it!
-theorem Set.ext (X Y : Set α) : (∀ e, e ∈ X ↔ e ∈ Y) -> X = Y := by
-  intro h; apply funext; intro e; apply propext; specialize h e; exact h
-
-def Set.powerset (α : Type u) (S : Set α) := fun x => x ⊆ S
 
 -- TO DO: für Mengen
 /-

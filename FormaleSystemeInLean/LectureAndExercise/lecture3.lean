@@ -1,10 +1,5 @@
 import FormaleSystemeInLean.LectureAndExercise.lecture1
 
--- inspired by mathlib
-class Fintype (α : Type u) where
-  elems : List α
-  complete : ∀ a : α, a ∈ elems
-
 structure DFA (Q : Type u) (Sigma : Type v) [Fintype Q] [Fintype Sigma] where
   δ: Q -> Sigma → Option Q
   q0 : Q

@@ -92,26 +92,6 @@ theorem acc_run_iff_δ_word_contains_final (nfa : NFA Q Sigma) (w : Word Sigma) 
     rcases run with ⟨q0, r, q0_mem⟩
     exists q0, qf, r
 
-
-def Powertype (α : Type u) := Set α
-
-instance : Membership α (Powertype α) where
-  mem S a := S a
-
-def List.power (l : List α) : List (List α) := sorry -- powerset but defined on lists
-
-def List.toSet (l : List α) : Set α := fun e => e ∈ l
-
-def Set.elem (S : Set α) (a : α) : Bool :=
-  sorry--if a ∈ S then true else false
-
-def Set.toList (S : Set α) [Fintype α] : List α :=
-  Fintype.elems.filter (fun x => S.elem x)
-
-instance (α : Type u) [Fintype α] : Fintype (Powertype α) where
-  elems := Fintype.elems.power.map (List.toSet)
-  complete := by sorry
-
 def DFA.to_NFA (M : DFA Q Sigma) : NFA Q Sigma where
   δ := fun q a =>
     match M.δ q a with
@@ -120,11 +100,12 @@ def DFA.to_NFA (M : DFA Q Sigma) : NFA Q Sigma where
   Q0 := [M.q0]
   F := M.F
 
-def NFA.to_DFA (M : NFA Q Sigma) : DFA (Powertype Q) Sigma where
+/-
+def NFA.to_DFA (M : NFA Q Sigma) [DecidablePred R] : DFA (Powertype Q) Sigma where
   δ := fun R a => some (R.toList.flatMap (fun q => M.δ q a)).toSet
   q0 := M.Q0.toSet
   F := Fintype.elems.filter (fun x => M.F.toSet ∩ x != ∅)
-
+-/
 def List.filterPred (l : List α) (P : α -> Prop) [DecidablePred P] : List α :=
   l.filter (fun a => decide (P a))
 
@@ -165,7 +146,7 @@ theorem to_NFA_lang_eq (M : DFA Q Sigma) : M.to_NFA.Language = M.Language := by
       sorry
     . sorry
 
-theorem δ_powersetDFA_eq_some (M : NFA Q Sigma) (a : Sigma) (R : Powertype Q) : M.to_DFA.δ R a ≠ none := by
+/-theorem δ_powersetDFA_eq_some (M : NFA Q Sigma) (a : Sigma) (R : Powertype Q) : M.to_DFA.δ R a ≠ none := by
   unfold NFA.to_DFA
   grind
 
@@ -177,7 +158,7 @@ theorem δ_NFA_subset_δ_powersetDFA (M : NFA Q Sigma) (a : Sigma) (R : Powertyp
   simp only [Membership.mem] at *
   --apply List.mem_flatMap_of_mem q_mem
   --exact q'_mem
-  sorry
+  sorry -/
 
 theorem δ_NFA_eq_δ_TotalDFA (M : NFA Q Sigma) (a : Sigma) (R : List Q) : M.to_TotalDFA.δ R.toSet a = (M.δ_word R [a]).toSet := by
   simp only [NFA.to_TotalDFA, NFA.δ_word]
