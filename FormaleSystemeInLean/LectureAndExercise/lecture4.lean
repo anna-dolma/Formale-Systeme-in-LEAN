@@ -108,55 +108,76 @@ def NFA.to_TotalDFA (M : NFA Q Sigma) [Fintype (Powertype Q)] : TotalDFA (Powert
   q0 := M.Q0.toSet
   F := Fintype.elems.filter (fun x => M.F.toSet ∩ x != ∅)
 
-theorem to_NFA_lang_eq (M : DFA Q Sigma) : M.to_NFA.Language = M.Language := by
+def TotalDFA.to_NFA (M : TotalDFA Q Sigma) : NFA Q Sigma where
+  δ := fun q a => [M.δ q a]--fun q' => q' = M.δ q a
+  Q0 := [M.q0]
+  F := M.F
+
+theorem totalDFA_NFA_δ_eq (M : TotalDFA Q Sigma) (a : Sigma) (q : Q) : q' ∈ M.to_NFA.δ q a ↔ q' = M.δ q a := by
+  simp only [TotalDFA.to_NFA, List.mem_singleton]
+
+theorem totalDFA_NFA_δ_word_eq (M : TotalDFA Q Sigma) (w : Word Sigma) (q : Q) : q' ∈ M.to_NFA.δ_word [q] w ↔ M.δ_word q w = q' := by
+  induction w generalizing q with
+  | nil =>
+    simp only [NFA.δ_word, TotalDFA.δ_word]
+    constructor
+    . intro eq
+      rw [List.mem_singleton] at eq
+      symm
+      rw [eq]
+    . intro eq
+      rw [List.mem_singleton]
+      symm
+      rw [eq]
+  | cons a v ih =>
+    simp only [NFA.δ_word, TotalDFA.δ_word, Membership.mem]
+    have aux := ih (M.δ q a)
+    simp -- mit was muss ich simpen?
+    exact aux
+
+-- letz fetz
+theorem totalDFA_NFA_lang_eq (M : TotalDFA Q Sigma) : M.to_NFA.Language = M.Language := by
   apply Set.ext
   intro w
+  rw [acc_run_iff_δ_word_contains_final]
+  unfold TotalDFA.Language
+  have Q0_eq : M.to_NFA.Q0 = [M.q0] := by
+    simp only [TotalDFA.to_NFA]
   constructor
-  . intro w_mem
-    simp only [DFA.Language, Membership.mem]
-    rw [acc_run_iff_δ_word_contains_final] at w_mem
-    rcases w_mem with ⟨qf, qf_memd, qf_memf⟩
-    simp only [DFA.to_NFA] at qf_memf
-    exists qf
-    constructor
-    . induction w with
-      | nil =>
-        simp only [NFA.δ_word, DFA.to_NFA, List.mem_singleton] at qf_memd
-        simp only [DFA.δ_word, Option.some_inj]
-        rw [qf_memd]
-      | cons a v ih =>
-        simp only [NFA.δ_word] at qf_memd
-        simp only [DFA.δ_word]
-
-        sorry
-    . trivial
-  . intro w_mem
-    simp only [DFA.Language, Membership.mem] at w_mem
-    rcases w_mem with ⟨qf, qf_eq, qf_memf⟩
-    unfold DFA.δ_word at qf_eq
-    rw [acc_run_iff_δ_word_contains_final]
-    exists qf
-    constructor
-    .
-      sorry
-    . simp only [DFA.to_NFA]
+  . intro hq
+    rcases hq with ⟨qf, qf_memd, qf_memf⟩
+    simp only [Membership.mem]
+    simp only [TotalDFA.to_NFA] at qf_memf
+    cases w with
+    | nil =>
+      simp only [NFA.δ_word] at qf_memd
+      simp only [TotalDFA.δ_word]
+      rw [Q0_eq, List.mem_singleton] at qf_memd
+      rw [← qf_memd]
       exact qf_memf
-
-
-
-/-theorem δ_powersetDFA_eq_some (M : NFA Q Sigma) (a : Sigma) (R : Powertype Q) : M.to_DFA.δ R a ≠ none := by
-  unfold NFA.to_DFA
-  grind
-
-theorem δ_NFA_subset_δ_powersetDFA (M : NFA Q Sigma) (a : Sigma) (R : Powertype Q) : q ∈ R.toList → (M.δ q a).toSet ⊆ M.to_TotalDFA.δ R a := by
-  intro q_mem
-  intro q' q'_mem
-  simp only [NFA.to_TotalDFA]
-  unfold List.toSet at *
-  simp only [Membership.mem] at *
-  --apply List.mem_flatMap_of_mem q_mem
-  --exact q'_mem
-  sorry -/
+    | cons a v =>
+      rw [Q0_eq, totalDFA_NFA_δ_word_eq] at qf_memd
+      rw [qf_memd]
+      exact qf_memf
+  . intro w_mem
+    simp only [Membership.mem] at w_mem
+    cases w with
+    | nil =>
+      simp only [TotalDFA.δ_word] at w_mem
+      exists M.q0
+      constructor
+      . rw [Q0_eq]
+        simp only [NFA.δ_word, List.mem_singleton]
+      . simp only [Membership.mem]
+        exact w_mem
+    | cons a v =>
+      simp only [TotalDFA.δ_word] at w_mem
+      exists (M.δ_word (M.δ M.q0 a) v)
+      constructor
+      . rw [Q0_eq, totalDFA_NFA_δ_word_eq]
+        rfl
+      . simp only [TotalDFA.to_NFA]
+        exact w_mem
 
 theorem δ_NFA_eq_δ_TotalDFA (M : NFA Q Sigma) (a : Sigma) (R : List Q) [Fintype (Powertype Q)] : M.to_TotalDFA.δ R.toSet a = (M.δ_word R [a]).toSet := by
   simp only [NFA.to_TotalDFA, NFA.δ_word]
