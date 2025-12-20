@@ -70,7 +70,7 @@ theorem nil_power (n : Nat) (l : List α) : l = [] -> l.power_upto n = [[]] := b
     rw [ih]
     simp
 
-theorem elem_power (T : Fintype α) (l : List α) (n : Nat) : n ≤ T.elems.length → l.length = n → l ∈ T.elems.power_upto n := by
+theorem mem_power_upto_n (T : Fintype α) (l : List α) (n : Nat) : n ≤ T.elems.length → l.length = n → l ∈ T.elems.power_upto n := by
   intro n_le l_len
   cases h : T.elems with
   | nil =>
@@ -167,7 +167,7 @@ theorem powerlist (T : Fintype α) (l : List α) : l.length ≤ T.elems.length -
     rw [l_len, List.mem_singleton]
   | cons b s =>
     have aux := inclusion_succ T l l.length l_len
-    have aux2 := elem_power T l l.length l_len rfl
+    have aux2 := mem_power_upto_n T l l.length l_len rfl
     rw [ht, List.length_cons, Nat.le_add_one_iff] at l_len
     rcases l_len with inl | inr
     . have test := aux aux2
@@ -228,6 +228,20 @@ theorem toList_toSet (l : List α) (S : Set α) (T : Fintype α) : l = S.toList 
     exact e_elem
 
 instance (T : Fintype α) [BEq α] : Fintype (Set α) where
+  elems := (T.elems.power_upto T.elems.length).map (fun x => x.toSet)
+  complete := by
+    intro S
+    have exists_l := exists_mem_powertype T S
+    rcases exists_l with ⟨l, l_eq, l_mem⟩
+    rw [List.mem_map]
+    exists l
+    constructor
+    . exact l_mem
+    . have aux := toList_toSet l S T l_eq
+      symm at aux
+      exact aux
+
+instance (T : Fintype α) [BEq α] : Fintype (Powertype α) where
   elems := (T.elems.power_upto T.elems.length).map (fun x => x.toSet)
   complete := by
     intro S

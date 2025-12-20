@@ -109,7 +109,7 @@ def NFA.to_DFA (M : NFA Q Sigma) [DecidablePred R] : DFA (Powertype Q) Sigma whe
 def List.filterPred (l : List α) (P : α -> Prop) [DecidablePred P] : List α :=
   l.filter (fun a => decide (P a))
 
-def NFA.to_TotalDFA (M : NFA Q Sigma) : TotalDFA (Powertype Q) Sigma where
+def NFA.to_TotalDFA (M : NFA Q Sigma) [Fintype (Powertype Q)] : TotalDFA (Powertype Q) Sigma where
   δ := fun R a => fun q => ∃ r ∈ R, q ∈ M.δ r a--(R.toList.flatMap (fun q => M.δ q a)).toSet
   q0 := M.Q0.toSet
   F := Fintype.elems.filter (fun x => M.F.toSet ∩ x != ∅) --(fun R => decide (∃ x, x ∈ R ∧ x ∈ M.F)) --
@@ -160,7 +160,7 @@ theorem δ_NFA_subset_δ_powersetDFA (M : NFA Q Sigma) (a : Sigma) (R : Powertyp
   --exact q'_mem
   sorry -/
 
-theorem δ_NFA_eq_δ_TotalDFA (M : NFA Q Sigma) (a : Sigma) (R : List Q) : M.to_TotalDFA.δ R.toSet a = (M.δ_word R [a]).toSet := by
+theorem δ_NFA_eq_δ_TotalDFA (M : NFA Q Sigma) (a : Sigma) (R : List Q) [Fintype (Powertype Q)] : M.to_TotalDFA.δ R.toSet a = (M.δ_word R [a]).toSet := by
   simp only [NFA.to_TotalDFA, NFA.δ_word]
   unfold List.toSet
   apply funext
@@ -168,7 +168,7 @@ theorem δ_NFA_eq_δ_TotalDFA (M : NFA Q Sigma) (a : Sigma) (R : List Q) : M.to_
   rw [List.mem_flatMap]
   rfl
 
-theorem δ_word_eq_DFA_NFA (M : NFA Q Sigma) (w : Word Sigma) (R : List Q) [BEq (Powertype Q)] : (M.δ_word R w).toSet = M.to_TotalDFA.δ_word R.toSet w := by
+theorem δ_word_eq_DFA_NFA (M : NFA Q Sigma) (w : Word Sigma) (R : List Q) [BEq (Powertype Q)] [Fintype (Powertype Q)] : (M.δ_word R w).toSet = M.to_TotalDFA.δ_word R.toSet w := by
   apply Set.ext
   intro q
   induction w generalizing q R with
@@ -209,7 +209,8 @@ theorem empty_eq (A : Set α) : (∀ (x : α), ¬x ∈ A) -> A = ∅ := by
   . intro e_mem
     simp only [Membership.mem] at e_mem
 
-theorem nonempty_2 (B : Set α) [BEq (Set α)] [LawfulBEq (Set α)] : B != ∅ -> ∃ a, a ∈ B := by
+-- "not_empty_contains_element" but for boolean inequality
+theorem ne_empty_contains_element (B : Set α) [BEq (Set α)] [LawfulBEq (Set α)] : B != ∅ -> ∃ a, a ∈ B := by
   intro neq
   apply Classical.byContradiction
   intro contra
@@ -218,7 +219,8 @@ theorem nonempty_2 (B : Set α) [BEq (Set α)] [LawfulBEq (Set α)] : B != ∅ -
   rw [aux] at neq
   simp at neq
 
-theorem to_DFA_lang_eq (M : NFA Q Sigma) [LawfulBEq (Set Q)] : M.to_TotalDFA.Language = M.Language := by
+theorem NFA_totalDFA_lang_eq (M : NFA Q Sigma) [LawfulBEq (Set Q)] (P : Fintype (Powertype Q)) : M.to_TotalDFA.Language = M.Language := by
+  have complete := P.complete
   apply Set.ext
   intro w
   unfold TotalDFA.Language
@@ -232,33 +234,48 @@ theorem to_DFA_lang_eq (M : NFA Q Sigma) [LawfulBEq (Set Q)] : M.to_TotalDFA.Lan
       have aux := List.mem_filter.mp w_mem
       rcases aux with ⟨r, t⟩
       have aux2 : ∃ q0, q0 ∈ M.F.toSet ∩ M.Q0.toSet := by
-        apply nonempty_2 (M.F.toSet ∩ M.Q0.toSet)
+        apply ne_empty_contains_element (M.F.toSet ∩ M.Q0.toSet)
         exact t
       rcases aux2 with ⟨q0, q0_memf, q0_memQ0⟩
       exists q0
     | cons a v =>
-      simp only [TotalDFA.δ_word, NFA.to_TotalDFA] at w_mem
-
-
-      --rcases w_mem with ⟨q, q_memd, q_memf⟩
-      /-exists q
-      rw [δ_word_eq_DFA_NFA]
-      -/
-      sorry
+      have aux := List.mem_filter.mp w_mem
+      rcases aux with ⟨r, t⟩
+      have aux2 : ∃ q0, q0 ∈ M.F.toSet ∩ (M.to_TotalDFA.δ_word M.to_TotalDFA.q0 (a :: v)) := by
+        apply ne_empty_contains_element (M.F.toSet ∩ (M.to_TotalDFA.δ_word M.to_TotalDFA.q0 (a :: v)))
+        exact t
+      rcases aux2 with ⟨qf, qf_memf, qf_memd⟩
+      exists qf
+      constructor
+      . have eq := δ_word_eq_DFA_NFA M (a::v) M.Q0
+        have test : ∀ q, q ∈ M.to_TotalDFA.δ_word M.Q0.toSet (a :: v) -> q ∈ (M.δ_word M.Q0 (a :: v)).toSet := by
+          intro q q_mem
+          rw [eq]
+          exact q_mem
+        specialize test qf
+        apply test qf_memd
+      . simp only [List.toSet, Membership.mem] at qf_memf
+        exact qf_memf
   . intro w_mem
     rw [acc_run_iff_δ_word_contains_final] at w_mem
     simp only [Membership.mem]
     rcases w_mem with ⟨q, q_memd, q_memf⟩
-    cases w with
-    | nil =>
-      unfold NFA.δ_word at q_memd
-      simp only [TotalDFA.δ_word, NFA.to_TotalDFA]
-
-      --exists q
-      sorry
-    | cons a v =>
-      --rw [δ_word_eq_DFA_NFA] at q_memd
-      simp only [TotalDFA.δ_word, NFA.to_TotalDFA]
-
-      --exists q
-      sorry
+    have aux : q ∈ M.F.toSet ∩ (M.δ_word M.Q0 w).toSet := by
+        constructor
+        . simp only [List.toSet, Membership.mem]
+          exact q_memf
+        . simp only [List.toSet, Membership.mem]
+          exact q_memd
+    have aux2 : M.F.toSet ∩ (M.δ_word M.Q0 w).toSet != ∅ := by
+        simp -- mit was?
+        intro contra
+        rw [contra] at aux
+        contradiction
+    have aux3 : (M.δ_word M.Q0 w).toSet ∈ (List.filter (fun x => M.F.toSet ∩ x != ∅) P.elems) := by
+      rw [List.mem_filter]
+      constructor
+      . specialize complete (M.δ_word M.Q0 w).toSet
+        exact complete
+      . exact aux2
+    rw [δ_word_eq_DFA_NFA] at aux3
+    exact aux3
