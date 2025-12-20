@@ -100,19 +100,13 @@ def DFA.to_NFA (M : DFA Q Sigma) : NFA Q Sigma where
   Q0 := [M.q0]
   F := M.F
 
-/-
-def NFA.to_DFA (M : NFA Q Sigma) [DecidablePred R] : DFA (Powertype Q) Sigma where
-  δ := fun R a => some (R.toList.flatMap (fun q => M.δ q a)).toSet
-  q0 := M.Q0.toSet
-  F := Fintype.elems.filter (fun x => M.F.toSet ∩ x != ∅)
--/
 def List.filterPred (l : List α) (P : α -> Prop) [DecidablePred P] : List α :=
   l.filter (fun a => decide (P a))
 
 def NFA.to_TotalDFA (M : NFA Q Sigma) [Fintype (Powertype Q)] : TotalDFA (Powertype Q) Sigma where
-  δ := fun R a => fun q => ∃ r ∈ R, q ∈ M.δ r a--(R.toList.flatMap (fun q => M.δ q a)).toSet
+  δ := fun R a => fun q => ∃ r ∈ R, q ∈ M.δ r a
   q0 := M.Q0.toSet
-  F := Fintype.elems.filter (fun x => M.F.toSet ∩ x != ∅) --(fun R => decide (∃ x, x ∈ R ∧ x ∈ M.F)) --
+  F := Fintype.elems.filter (fun x => M.F.toSet ∩ x != ∅)
 
 theorem to_NFA_lang_eq (M : DFA Q Sigma) : M.to_NFA.Language = M.Language := by
   apply Set.ext
@@ -133,6 +127,7 @@ theorem to_NFA_lang_eq (M : DFA Q Sigma) : M.to_NFA.Language = M.Language := by
       | cons a v ih =>
         simp only [NFA.δ_word] at qf_memd
         simp only [DFA.δ_word]
+
         sorry
     . trivial
   . intro w_mem
@@ -144,7 +139,10 @@ theorem to_NFA_lang_eq (M : DFA Q Sigma) : M.to_NFA.Language = M.Language := by
     constructor
     .
       sorry
-    . sorry
+    . simp only [DFA.to_NFA]
+      exact qf_memf
+
+
 
 /-theorem δ_powersetDFA_eq_some (M : NFA Q Sigma) (a : Sigma) (R : Powertype Q) : M.to_DFA.δ R a ≠ none := by
   unfold NFA.to_DFA

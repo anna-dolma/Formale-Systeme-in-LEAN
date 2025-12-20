@@ -1,5 +1,7 @@
 import FormaleSystemeInLean.LectureAndExercise.lecture1
 
+set_option linter.unusedSectionVars false
+
 structure DFA (Q : Type u) (Sigma : Type v) [Fintype Q] [Fintype Sigma] where
   δ: Q -> Sigma → Option Q
   q0 : Q
@@ -38,6 +40,11 @@ def DFA.to_totalDFA (M : DFA Q Sigma) : TotalDFA (Option Q) Sigma where
   q0 := .some M.q0
   F := M.F.map fun q => some q
 
+def TotalDFA.to_DFA (M : TotalDFA Q Sigma) : DFA Q Sigma where
+  δ := fun q a => .some (M.δ q a)
+  q0 := M.q0
+  F := M.F
+
 theorem final_iff_final (M : DFA Q Sigma) (q : Q) : q ∈ M.F ↔ some q ∈ M.to_totalDFA.F := by
   constructor
   . intro q_mem
@@ -71,7 +78,7 @@ theorem final_ne_none (M : DFA Q Sigma) : q ∈ M.to_totalDFA.F → q ≠ none :
   rw [←b]
   apply Option.some_ne_none
 
-theorem δ_word_eq_δ_word (M : DFA Q Sigma) (q : Q) (w : Word Sigma) : M.δ_word q w = M.to_totalDFA.δ_word q w := by
+theorem to_totalDFA_δ_word_eq (M : DFA Q Sigma) (q : Q) (w : Word Sigma) : M.δ_word q w = M.to_totalDFA.δ_word q w := by
   induction w generalizing q with
   | nil =>
     trivial
@@ -99,7 +106,7 @@ theorem totalDFA_eq_DFA (M : DFA Q Sigma) : M.Language = (M.to_totalDFA).Languag
   constructor
   . intro w_mem
     rcases w_mem with ⟨qf, w_acc, qf_mem⟩
-    rw [δ_word_eq_δ_word] at w_acc
+    rw [to_totalDFA_δ_word_eq] at w_acc
     rw [final_iff_final] at qf_mem
     have aux : M.to_totalDFA.q0 = some M.q0 := by simp only [DFA.to_totalDFA]
     simp only [Membership.mem, aux]
@@ -114,7 +121,7 @@ theorem totalDFA_eq_DFA (M : DFA Q Sigma) : M.Language = (M.to_totalDFA).Languag
     rcases aux with ⟨qf, qf_eq⟩
     exists qf
     constructor
-    . rw [δ_word_eq_δ_word]
+    . rw [to_totalDFA_δ_word_eq]
       exact qf_eq
     . simp only [DFA.to_totalDFA, List.mem_map] at w_mem
       rcases w_mem with ⟨qf', qf'_mem, qf'_eq⟩
@@ -122,3 +129,35 @@ theorem totalDFA_eq_DFA (M : DFA Q Sigma) : M.Language = (M.to_totalDFA).Languag
       rw [qf_eq, Option.some_inj] at qf'_eq
       rw [← qf'_eq]
       exact qf'_mem
+
+theorem to_DFA_δ_eq (M : TotalDFA Q Sigma) (q : Q) (a : Sigma) : M.δ q a = M.to_DFA.δ q a := by
+  simp only [TotalDFA.to_DFA]
+
+theorem to_DFA_δ_word_eq (M : TotalDFA Q Sigma) (q : Q) (w : Word Sigma) : M.δ_word q w = M.to_DFA.δ_word q w := by
+  induction w generalizing q with
+  | nil =>
+    trivial
+  | cons a v ih =>
+    simp only [DFA.δ_word, TotalDFA.δ_word]
+    have aux := ih (M.δ q a)
+    exact aux
+
+theorem DFA_eq_totalDFA (M : TotalDFA Q Sigma) : M.Language = (M.to_DFA).Language := by
+  apply Set.ext
+  intro w
+  unfold DFA.Language TotalDFA.Language
+  simp only [Membership.mem] at *
+  constructor
+  . intro w_mem
+    exists (M.δ_word M.q0 w)
+    constructor
+    . rw [to_DFA_δ_word_eq]
+      rfl
+    . exact w_mem
+  . intro w_mem
+    rcases w_mem with ⟨qf, qf_eq, qf_mem⟩
+    rw [← to_DFA_δ_word_eq, Option.some_inj] at qf_eq
+    have q0_eq : M.to_DFA.q0 = M.q0 := by simp only [TotalDFA.to_DFA]
+    rw [← q0_eq]
+    rw [qf_eq]
+    exact qf_mem
