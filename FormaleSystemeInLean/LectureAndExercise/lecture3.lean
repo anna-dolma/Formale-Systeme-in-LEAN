@@ -46,17 +46,10 @@ def TotalDFA.to_DFA (M : TotalDFA Q Sigma) : DFA Q Sigma where
   F := M.F
 
 theorem final_iff_final (M : DFA Q Sigma) (q : Q) : q ∈ M.F ↔ some q ∈ M.to_totalDFA.F := by
-  constructor
-  . intro q_mem
-    unfold DFA.to_totalDFA
-    grind
-  . intro q_mem
-    unfold DFA.to_totalDFA at q_mem
-    grind
+  simp [DFA.to_totalDFA]
 
 theorem δ_eq_δ (M : DFA Q Sigma) (q : Q) (a : Sigma) : M.δ q a = M.to_totalDFA.δ q a := by
-  unfold DFA.to_totalDFA
-  simp
+  simp [DFA.to_totalDFA]
 
 theorem δ_none_eq_none (M : DFA Q Sigma) (a : Sigma) : M.to_totalDFA.δ none a = none := by
   trivial -- to do: ohne trivial???
@@ -139,8 +132,7 @@ theorem to_DFA_δ_word_eq (M : TotalDFA Q Sigma) (q : Q) (w : Word Sigma) : M.δ
     trivial
   | cons a v ih =>
     simp only [DFA.δ_word, TotalDFA.δ_word]
-    have aux := ih (M.δ q a)
-    exact aux
+    exact ih (M.δ q a)
 
 theorem DFA_eq_totalDFA (M : TotalDFA Q Sigma) : M.Language = (M.to_DFA).Language := by
   apply Set.ext
@@ -161,3 +153,4 @@ theorem DFA_eq_totalDFA (M : TotalDFA Q Sigma) : M.Language = (M.to_DFA).Languag
     rw [← q0_eq]
     rw [qf_eq]
     exact qf_mem
+

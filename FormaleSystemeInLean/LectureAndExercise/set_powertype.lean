@@ -319,7 +319,7 @@ theorem set_of_list (T : Fintype α) (S : Set α) : ∃ (l : List α), l.toSet =
 
   sorry
 
-instance (T : Fintype α) [BEq α] : Fintype (Set α) where
+instance [T : Fintype α] [BEq α] : Fintype (Set α) where
   elems := (T.elems.power_upto T.elems.length).map (fun x => x.toSet)
   complete := by
     intro S
@@ -414,7 +414,7 @@ theorem list_of_fintype_set (T : Fintype α) (S : Set α) : ∃ (l : List α), l
     have mem := powerlist T (T.elems.filter (fun e => have := Classical.propDecidable (e ∈ S); decide (e ∈ S))) l_length
     exact mem
 
-instance (T : Fintype α) [BEq α] : Fintype (Powertype α) where
+instance [T : Fintype α] [BEq α] : Fintype (Powertype α) where
   elems := (T.elems.power_upto T.elems.length).map (fun x => x.toSet)
   complete := by
     intro S
