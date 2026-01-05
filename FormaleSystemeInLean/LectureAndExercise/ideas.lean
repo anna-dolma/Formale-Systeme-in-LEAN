@@ -31,6 +31,38 @@ def List.power (l : List α) : List (List α) :=
     | n+1 => let prev := loop n; prev ++ (prev.flatMap (fun l' => l.map fun e => e:: l'))
   loop l.length
 
+def pcp_k (pcp : List (String × String)) (k : Nat) : List (List (String × String)) :=
+  let rec loop : Nat → List (List (String × String))
+    | 0 => pcp.map ([ · ])
+    | n+1 => let prev := loop n; (((prev.flatMap (fun l' => pcp.map fun e => l' ++ [e]))).filter fun l => ((l.map (fun t => (t.1).toList)).flatten.zip (l.map (fun t => (t.2).toList)).flatten).all (fun (x, y) => x == y)).eraseDups
+
+  loop k
+
+def List.concat_ith (l : List (String × String)) : String × String :=
+  ((l.map (fun t => t.1)).foldl (· ++ toString ·) "", (l.map (fun t => t.2)).foldl (· ++ toString ·) "")
+
+-- problem: findet keine lösung, wenn es eine für ein n < k gibt >:(
+-- also alle zahlen von 0 bis k durchgehen und lösungen sammeln?
+def pcp_k_find_solutions (pcp : List (String × String)) (k : Nat) : List (List (String × String)) :=
+  (pcp_k pcp k).filter (fun s => s.concat_ith.1.length == s.concat_ith.2.length)
+
+#eval ([("b", "bbb"), ("b", "bbb")].map (fun t => t.2)).foldl (· ++ toString ·) ""
+
+def pcp1 : List ((List Char) × (List Char)) := [(['A','B'],['B']), (['B'], ['B','B','B']), (['B','B'], ['B','A'])]
+def pcp2 : List (String × String) := [("ab", "b"), ("b", "bbb"), ("bb", "ba")]
+def pcp3 : List (String × String) := [("aa", "a"), ("ba", "ab"), ("b", "abb")]
+def pcp_stupid : List (String × String) := [("ab", "a"), ("b", "bb")]
+def pcp4 : List (String × String) := [("a", "baa"), ("ab", "aa"), ("bba", "bb")]
+
+#eval "lol".toList
+
+#eval ((pcp3.map (fun t => (t.1).toList)).flatten.zip (pcp3.map (fun t => (t.2).toList)).flatten)--.all (fun (x, y) => x == y)
+--#check [pcp2, pcp3].filter (fun l => (pcp2.map (fun t => (t.2).toList)).flatten)
+
+--#eval pcp_k pcp2 10
+#eval pcp_k_find_solutions pcp4 3
+#eval [("bba", "bb"), ("ab", "aa"), ("bba", "bb"), ("a", "baa")].concat_ith
+
 def List.powerset_lists [BEq α] (l : List α) : List (List α) :=
   (List.powerRec l l.length).eraseDups
 
@@ -48,32 +80,9 @@ def List.powerset_lists [BEq α] (l : List α) : List (List α) :=
 #eval ([0, 1, 2].power_upto 3).eraseDups
 #eval l0.power_upto 99
 
-theorem max_card (T : Fintype α) (S : Set α) [BEq α] [DecidablePred S] : S.toList.length ≤ T.elems.length := by
-  have complete := T.complete
-  cases ht:  T.elems with
-  | nil =>
-    rw [ht] at complete
-    simp only [List.mem_nil_iff] at complete
-    rw [List.length_nil, Nat.le_zero]
 
-    sorry
-  | cons b a =>
-    -- entweder S.toList.length = (b::a).length
-    -- oder...
-    rw [Nat.le_iff_lt_or_eq]
-    by_cases hs : S.toList.length = (b :: a).length
-    . apply Or.inr
-      exact hs
-    . simp only [hs]
-      apply Or.inl
 
-      sorry
 
--- daraus soll DecidablePred S folgen
-theorem set_of_list (T : Fintype α) (S : Set α) : ∃ (l : List α), l.toSet = S := by
-  have complete := T.complete
-  --exists (fun a => a ∈ l).toSet
-  sorry
 
 structure DFA (Q : Type u) (Sigma : Type v) [Fintype Q] where
   𝓠 : Set Q

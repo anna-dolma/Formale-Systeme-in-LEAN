@@ -43,6 +43,31 @@ def Set.map (f : α → β) (S : Set α) [Fintype α] : Set β :=
 theorem Set.ext (X Y : Set α) : (∀ e, e ∈ X ↔ e ∈ Y) -> X = Y := by
   intro h; apply funext; intro e; apply propext; specialize h e; exact h
 
+theorem not_empty_contains_element (X : Set α) : X ≠ ∅ -> ∃ e, e ∈ X := by
+  intro neq
+  apply Classical.byContradiction
+  intro contra
+  apply neq
+  apply Set.ext
+  intro e
+  simp only [not_exists] at contra
+  specialize contra e
+  simp only [contra, false_iff]
+  simp [Membership.mem, EmptyCollection.emptyCollection]
+
+theorem empty_eq (A : Set α) : (∀ (x : α), ¬x ∈ A) -> A = ∅ := by
+  intro h
+  apply Set.ext
+  intro a
+  simp only [EmptyCollection.emptyCollection]
+  constructor
+  . intro e_mem
+    simp only [Membership.mem]
+    apply h a
+    exact e_mem
+  . intro e_mem
+    simp only [Membership.mem] at e_mem
+
 def Powertype (α : Type u) := Set α
 
 instance : Membership α (Powertype α) where
@@ -193,9 +218,15 @@ theorem exists_mem_powertype (T : Fintype α) (S : Set α) [BEq α] [DecidablePr
     have mem := powerlist T S.toList l_len
     exact mem
 
+-- gegeben: S und irgendein α
+-- frage: gilt S α ?
+-- es gibt nur endlich viele α, für die S gilt
+-- daher muss es eine liste mit elementen aus Fintype.elems geben, die alle α mit S α enthält
 instance (S : Set α) [Fintype α] : DecidablePred S := by
 
   sorry
+
+-- List.remove braucht nur BEq
 
 theorem elem_iff_mem (S : Set α) (a : α) [Fintype α] : S.elem a = true ↔ a ∈ S := by
   unfold Set.elem
@@ -227,6 +258,67 @@ theorem toList_toSet (l : List α) (S : Set α) (T : Fintype α) : l = S.toList 
     rw [elem_iff_mem] at e_elem
     exact e_elem
 
+theorem empty_set_if_empty_type (T : Fintype α) (S : Set α) : T.elems = [] → S = ∅ := by
+  intro h
+  apply Classical.byContradiction
+  intro contra
+  have exists_elem : ∃ a, a ∈ S := by
+    rw [← Ne.eq_1] at contra
+    apply not_empty_contains_element
+    exact contra
+  rcases exists_elem with ⟨a, a_mem⟩
+  have aux := T.complete
+  specialize aux a
+  rw [h] at aux
+  contradiction
+
+-- problem: toList verwendet decidablePred
+theorem max_card (T : Fintype α) (S : Set α) [BEq α] : S.toList.length ≤ T.elems.length := by
+  have complete := T.complete
+  cases ht:  T.elems with
+  | nil =>
+    rw [ht] at complete
+    simp only [List.mem_nil_iff] at complete
+    rw [List.length_nil, Nat.le_zero]
+    have S_eq : S = ∅ := empty_set_if_empty_type T S ht
+    have S_toList : S.toList = [] := by
+      unfold Set.toList
+      sorry
+    sorry
+  | cons b a =>
+    -- entweder S.toList.length = (b::a).length
+    -- oder...
+    rw [Nat.le_iff_lt_or_eq]
+    by_cases hs : S.toList.length = (b :: a).length
+    . apply Or.inr
+      exact hs
+    . simp only [hs]
+      apply Or.inl
+
+      sorry
+
+-- daraus soll DecidablePred S folgen
+theorem set_of_list (T : Fintype α) (S : Set α) : ∃ (l : List α), l.toSet = S := by
+  have complete := T.complete
+  have case1 : (S = fun a => True) → S = T.elems.toSet := by
+    intro h
+    apply Set.ext
+    intro e
+    constructor
+    . intro e_mem
+      specialize complete e
+      unfold List.toSet
+      simp only [Membership.mem]
+      exact complete
+    . intro e_mem
+      rw [h]
+      simp only [Membership.mem]
+  -- wenn S ≠ T.elems.toSet, dann gibt es eine menge S' so dass S = T.elems \ S'
+  -- l = T.elems.removeAll ...
+  -- gequirlter quark
+
+  sorry
+
 instance (T : Fintype α) [BEq α] : Fintype (Set α) where
   elems := (T.elems.power_upto T.elems.length).map (fun x => x.toSet)
   complete := by
@@ -241,16 +333,92 @@ instance (T : Fintype α) [BEq α] : Fintype (Set α) where
       symm at aux
       exact aux
 
+theorem list_of_complete_set (T : Fintype α) (S : Set α) : (S = fun _ => True) → ∃ (l : List α), l.toSet = S := by
+  intro hs
+  exists T.elems
+  rw [hs]
+  unfold List.toSet
+  apply funext
+  intro x
+  have complete := T.complete
+  specialize complete x
+  grind
+
+theorem complete_set_eq [Fintype α] (S : Set α) : (S = fun _ => True) ↔ ∀ (x : α), x ∈ S := by
+  constructor
+  . intro eq
+    intro x
+    rw [eq]
+    simp only [Membership.mem]
+  . intro h
+    apply Set.ext
+    intro x
+    constructor
+    . intro x_mem
+      simp only [Membership.mem]
+    . intro x_mem
+      grind
+
+theorem exists_not_mem_if_ne_complete_set (T : Fintype α) (S : Set α) : (S ≠ fun _ => True) → ∃ a, a ∉ S := by
+  intro ne
+  rw [Ne.eq_1] at ne
+  apply Classical.byContradiction
+  intro contra
+  simp at contra
+  have aux := complete_set_eq S
+  have S_eq := aux.mpr contra
+  contradiction
+
+theorem ssubset_of_complete_set (T : Fintype α) (S : Set α) : (S ≠ fun _ => True) → S ⊂ (fun _ => True) := by
+  intro ne
+  constructor
+  . intro a a_mem
+    trivial
+  . intro h
+    have aux := exists_not_mem_if_ne_complete_set T S ne
+    rcases aux with ⟨x, x_nmem⟩
+    let complete_set : Set α := (fun a => True)
+    have x_mem : x ∈ complete_set := by
+      unfold complete_set
+      simp only [Membership.mem]
+    have x_mem_S : x ∈ S := h x x_mem
+    contradiction
+
+theorem subset_of_complete_set [Fintype α] (S : Set α) : S ⊆ (fun _ => true) := by
+  intro x x_mem
+  trivial
+
+theorem list_of_fintype_set (T : Fintype α) (S : Set α) : ∃ (l : List α), l.toSet = S ∧ l ∈ (T.elems.power_upto T.elems.length) := by
+  exists (T.elems.filter (fun e =>
+      have := Classical.propDecidable (e ∈ S)
+      decide (e ∈ S)
+    ))
+  constructor
+  . unfold List.toSet
+    simp
+    apply Set.ext
+    intro x
+    simp only [Membership.mem]
+    constructor
+    . intro h
+      rcases h with ⟨mem_elems, mem_S⟩
+      exact mem_S
+    . intro h
+      constructor
+      . have complete := T.complete
+        specialize complete x
+        exact complete
+      . exact h
+  . have l_length : (T.elems.filter (fun e => have := Classical.propDecidable (e ∈ S); decide (e ∈ S))).length ≤ T.elems.length := by
+      grind
+    have mem := powerlist T (T.elems.filter (fun e => have := Classical.propDecidable (e ∈ S); decide (e ∈ S))) l_length
+    exact mem
+
 instance (T : Fintype α) [BEq α] : Fintype (Powertype α) where
   elems := (T.elems.power_upto T.elems.length).map (fun x => x.toSet)
   complete := by
     intro S
-    have exists_l := exists_mem_powertype T S
+    have exists_l := list_of_fintype_set T S
     rcases exists_l with ⟨l, l_eq, l_mem⟩
     rw [List.mem_map]
     exists l
-    constructor
-    . exact l_mem
-    . have aux := toList_toSet l S T l_eq
-      symm at aux
-      exact aux

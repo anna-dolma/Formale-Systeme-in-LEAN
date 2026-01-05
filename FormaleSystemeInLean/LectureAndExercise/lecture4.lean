@@ -203,30 +203,7 @@ theorem δ_word_eq_DFA_NFA (M : NFA Q Sigma) (w : Word Sigma) (R : List Q) [BEq 
     grind
     --sorry
 
-theorem not_empty_contains_element (X : Set α) : X ≠ ∅ -> ∃ e, e ∈ X := by
-  intro neq
-  apply Classical.byContradiction
-  intro contra
-  apply neq
-  apply Set.ext
-  intro e
-  simp only [not_exists] at contra
-  specialize contra e
-  simp only [contra, false_iff]
-  simp [Membership.mem, EmptyCollection.emptyCollection]
 
-theorem empty_eq (A : Set α) : (∀ (x : α), ¬x ∈ A) -> A = ∅ := by
-  intro h
-  apply Set.ext
-  intro a
-  simp only [EmptyCollection.emptyCollection]
-  constructor
-  . intro e_mem
-    simp only [Membership.mem]
-    apply h a
-    exact e_mem
-  . intro e_mem
-    simp only [Membership.mem] at e_mem
 
 -- "not_empty_contains_element" but for boolean inequality
 theorem ne_empty_contains_element (B : Set α) [BEq (Set α)] [LawfulBEq (Set α)] : B != ∅ -> ∃ a, a ∈ B := by

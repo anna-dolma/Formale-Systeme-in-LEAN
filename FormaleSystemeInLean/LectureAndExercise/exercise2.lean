@@ -67,6 +67,10 @@ section Exercise3
       . exact r2_start
       . exact sim.final qf1_eq_qf2 r1_accept
 
+    theorem part_b : ∃ (nfa1 : NFA Q1 Sigma) (nfa2 : NFA Q2 Sigma), nfa1.Language ⊆ nfa2.Language ∧ ∀ (r : Set (Q1 × Q2)), ¬∃ (sim : NFASimulation nfa1 nfa2), sim.rel = r := by
+
+      sorry
+
   end d
 
 end Exercise3
