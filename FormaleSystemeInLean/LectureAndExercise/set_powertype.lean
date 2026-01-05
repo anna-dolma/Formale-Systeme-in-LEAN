@@ -227,7 +227,7 @@ theorem toList_toSet (l : List α) (S : Set α) (T : Fintype α) : l = S.toList 
     rw [elem_iff_mem] at e_elem
     exact e_elem
 
-instance (T : Fintype α) [BEq α] : Fintype (Set α) where
+instance [T : Fintype α] [BEq α] : Fintype (Set α) where
   elems := (T.elems.power_upto T.elems.length).map (fun x => x.toSet)
   complete := by
     intro S
@@ -241,7 +241,7 @@ instance (T : Fintype α) [BEq α] : Fintype (Set α) where
       symm at aux
       exact aux
 
-instance (T : Fintype α) [BEq α] : Fintype (Powertype α) where
+instance [T : Fintype α] [BEq α] : Fintype (Powertype α) where
   elems := (T.elems.power_upto T.elems.length).map (fun x => x.toSet)
   complete := by
     intro S
