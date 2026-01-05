@@ -216,7 +216,7 @@ theorem ne_empty_contains_element (B : Set α) [BEq (Set α)] [LawfulBEq (Set α
   rw [aux] at neq
   simp at neq
 
-theorem NFA_totalDFA_lang_eq (M : NFA Q Sigma) [LawfulBEq (Set Q)] : M.to_TotalDFA.Language = M.Language := by
+theorem NFA_totalDFA_lang_eq (M : NFA Q Sigma) [BEq (Powertype Q)] [LawfulBEq (Set Q)] : M.to_TotalDFA.Language = M.Language := by
   apply Set.ext
   intro w
   unfold TotalDFA.Language
@@ -245,4 +245,3 @@ theorem NFA_totalDFA_lang_eq (M : NFA Q Sigma) [LawfulBEq (Set Q)] : M.to_TotalD
         . exact q_mem_start
       rw [contra] at this
       simp [EmptyCollection.emptyCollection, Membership.mem] at this
-
