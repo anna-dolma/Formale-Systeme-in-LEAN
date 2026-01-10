@@ -43,7 +43,7 @@ def Set.map (f : α → β) (S : Set α) [Fintype α] : Set β :=
 theorem Set.ext (X Y : Set α) : (∀ e, e ∈ X ↔ e ∈ Y) -> X = Y := by
   intro h; apply funext; intro e; apply propext; specialize h e; exact h
 
-theorem not_empty_contains_element (X : Set α) : X ≠ ∅ -> ∃ e, e ∈ X := by
+theorem Set.not_empty_contains_element (X : Set α) : X ≠ ∅ -> ∃ e, e ∈ X := by
   intro neq
   apply Classical.byContradiction
   intro contra
@@ -55,7 +55,7 @@ theorem not_empty_contains_element (X : Set α) : X ≠ ∅ -> ∃ e, e ∈ X :=
   simp only [contra, false_iff]
   simp [Membership.mem, EmptyCollection.emptyCollection]
 
-theorem empty_eq (A : Set α) : (∀ (x : α), ¬x ∈ A) -> A = ∅ := by
+theorem Set.empty_eq (A : Set α) : (∀ (x : α), ¬x ∈ A) -> A = ∅ := by
   intro h
   apply Set.ext
   intro a
@@ -67,6 +67,25 @@ theorem empty_eq (A : Set α) : (∀ (x : α), ¬x ∈ A) -> A = ∅ := by
     exact e_mem
   . intro e_mem
     simp only [Membership.mem] at e_mem
+
+theorem Set.empty_iff (A : Set α) : A = ∅ ↔ ∀ a, a ∉ A := by
+  constructor
+  . intro A_eq
+    simp only [EmptyCollection.emptyCollection] at *
+    intro a
+    intro contra
+    simp only [A_eq, Membership.mem] at contra
+  . intro h
+    apply Set.ext
+    intro e
+    simp only [EmptyCollection.emptyCollection]
+    constructor
+    . intro e_mem
+      simp only [Membership.mem]
+      apply h e
+      exact e_mem
+    . intro e_mem
+      simp only [Membership.mem] at e_mem
 
 def Powertype (α : Type u) := Set α
 
@@ -259,7 +278,7 @@ theorem empty_set_if_empty_type (T : Fintype α) (S : Set α) : T.elems = [] →
   intro contra
   have exists_elem : ∃ a, a ∈ S := by
     rw [← Ne.eq_1] at contra
-    apply not_empty_contains_element
+    apply Set.not_empty_contains_element
     exact contra
   rcases exists_elem with ⟨a, a_mem⟩
   have aux := T.complete
@@ -355,6 +374,32 @@ theorem list_of_subset (X Y : Set α) (h : ∃ (l' : List α), Y = l'.toSet) : X
   . intro x_mem
     exact x_mem.right
 
+theorem dupfree_list_of_subset (X Y : Set α) (h : ∃ (l' : List α), Y = l'.toSet) : X ⊆ Y → ∃ (l : List α), X = l.toSet ∧ l.Nodup := by
+  intro sub
+  rcases h with ⟨l', l'_eq⟩
+  exists (l'.filter (fun e =>
+      have := Classical.propDecidable (e ∈ X)
+      decide (e ∈ X)
+    ))
+  unfold List.toSet
+  simp --only [List.mem_filter]
+  constructor
+  . apply Set.ext
+    intro x
+    simp only [Membership.mem]
+    constructor
+    . intro x_mem
+      constructor
+      . have x_mem_Y := sub x x_mem
+        rw [l'_eq] at x_mem_Y
+        simp only [List.toSet, Membership.mem] at x_mem_Y
+        exact x_mem_Y
+      . exact x_mem
+    . intro x_mem
+      exact x_mem.right
+  . simp only [List.Nodup]
+    sorry
+
 theorem list_of_subset' (T : Fintype α) (X Y : Set α) (h : ∃ (l' : List α), Y = l'.toSet ∧ l'.length ≤ T.elems.length) : X ⊆ Y → ∃ (l : List α), X = l.toSet ∧ l ∈ (T.elems.power_upto T.elems.length)  := by
   intro sub
   rcases h with ⟨l', l'_eq, l'_length⟩
@@ -411,3 +456,41 @@ instance [T : Fintype α] [BEq α] : Fintype (Powertype α) where
     rcases exists_l with ⟨l, l_eq, l_mem⟩
     rw [l_eq, List.mem_map]
     exists l
+
+instance [T : Fintype α] [BEq α] : Fintype (Set α) where
+  elems := (T.elems.power_upto T.elems.length).map (fun x => x.toSet)
+  complete := by
+    intro S
+    have exists_l := mem_powerlist_of_fintype_set T S
+    rcases exists_l with ⟨l, l_eq, l_mem⟩
+    rw [l_eq, List.mem_map]
+    exists l
+
+def List.removeDups [DecidableEq α] : List α -> List α
+  | [] => []
+  | hd::tl => if hd ∈ tl then tl.removeDups else hd::(tl.removeDups)
+
+theorem List.mem_removeDups [DecidableEq α] (l : List α) : ∀ a, a ∈ l ↔ a ∈ l.removeDups := by
+  induction l with
+  | nil =>
+    intro a
+    simp only [removeDups]
+  | cons b l' ih =>
+    unfold removeDups
+    intro a
+    by_cases b_mem : b ∈ l'
+    . simp only [b_mem, ite_true, List.mem_cons, ih]
+      by_cases a_eq : a = b
+      . simp only [a_eq, true_or]
+        specialize ih b
+        have aux : b ∈ l'.removeDups := ih.mp b_mem
+        simpa using aux
+      . simp only [a_eq, false_or]
+    . simp only [b_mem, ite_false, List.mem_cons, ih]
+
+/-
+in list_of_subset zeigen, dass l keine duplikate hat
+daraus schließen, dass l höchstens so viele elemente wie T.elems hat
+darauf powerlist anwenden
+(mithilfe von list_of_subset list_of_subset' zeigen)
+-/

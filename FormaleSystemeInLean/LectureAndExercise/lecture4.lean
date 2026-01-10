@@ -110,7 +110,7 @@ def NFA.to_TotalDFA (M : NFA Q Sigma) : TotalDFA (Powertype Q) Sigma where
   F := Fintype.elems.filter (fun x => M.F.toSet ∩ x != ∅)
 
 def TotalDFA.to_NFA (M : TotalDFA Q Sigma) : NFA Q Sigma where
-  δ := fun q a => [M.δ q a]--fun q' => q' = M.δ q a
+  δ := fun q a => [M.δ q a]
   Q0 := [M.q0]
   F := M.F
 
@@ -136,7 +136,6 @@ theorem totalDFA_NFA_δ_word_eq (M : TotalDFA Q Sigma) (w : Word Sigma) (q : Q) 
     simp -- mit was muss ich simpen?
     exact aux
 
--- letz fetz
 theorem totalDFA_NFA_lang_eq (M : TotalDFA Q Sigma) : M.to_NFA.Language = M.Language := by
   apply Set.ext
   intro w
@@ -212,7 +211,7 @@ theorem ne_empty_contains_element (B : Set α) [BEq (Set α)] [LawfulBEq (Set α
   apply Classical.byContradiction
   intro contra
   rw [not_exists] at contra
-  have aux := empty_eq B contra
+  have aux := Set.empty_eq B contra
   rw [aux] at neq
   simp at neq
 
