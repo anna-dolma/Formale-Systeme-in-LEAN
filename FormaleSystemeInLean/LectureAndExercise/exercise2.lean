@@ -1,36 +1,5 @@
 import FormaleSystemeInLean.LectureAndExercise.lecture4
 
-/-
-structure DFA (Q : Type u) (Sigma : Type v) [Fintype Q] [Fintype Sigma] where
-  δ: Q -> Sigma → Option Q
-  q0 : Q
-  F : List Q
-
-structure NFA (Q : Type u) (Sigma : Type v) [Fintype Q] [Fintype Sigma] where
-  δ: Q -> Sigma → List Q
-  Q0 : List Q
-  F : List Q
-
-variable {Q : Type u} {Sigma : Type v} [Fintype Q] [Fintype Sigma]
-
-def DFA.δ_word (dfa : DFA Q Sigma) (q : Q) : (Word Sigma) -> Option Q
-| .nil => .some q
-| .cons a v => (dfa.δ q a).bind (fun q' => dfa.δ_word q' v)
-
-def DFA.Language (dfa : DFA Q Sigma) : Language Sigma :=
-  fun w => ∃ qf, dfa.δ_word dfa.q0 w = some qf ∧ qf ∈ dfa.F
-
-inductive NFA.Run (nfa : NFA Q Sigma) : Q -> Q -> Word Sigma -> Type _
-| self (q : Q) : nfa.Run q q []
-| step {q1 q2 qf : Q} {a : Sigma} {v : Word Sigma} (r : nfa.Run q2 qf v) (q2_mem : q2 ∈ nfa.δ q1 a) : nfa.Run q1 qf (a :: v)
-
-def NFA.Run.from_start {nfa : NFA Q Sigma} (_ : nfa.Run q0 q w) : Prop := q0 ∈ nfa.Q0
-def NFA.Run.accepts {nfa : NFA Q Sigma} (_ : nfa.Run q qf w) : Prop := qf ∈ nfa.F
-
-def NFA.Language (nfa : NFA Q Sigma) : Language Sigma :=
-  fun w => ∃ (q0 qf : Q) (r : nfa.Run q0 qf w), r.from_start ∧ r.accepts
--/
-
 section Exercise3
 
   variable {Sigma : Type u} {Q1 : Type u1} {Q2 : Type u2} [Fintype Q1] [Fintype Q2] [Fintype Sigma]
@@ -66,8 +35,6 @@ section Exercise3
       constructor
       . exact r2_start
       . exact sim.final qf1_eq_qf2 r1_accept
-
-
 
     def statesList := ["q0", "q1", "q2"]
     def sigma := ['a', 'b']
@@ -182,9 +149,8 @@ section Exercise3
         have delta'_q0_eq : 𝓜''.δ (fun q => q = ⟨"q0", by simp only [statesList]; grind⟩) ⟨'b', by simp only [sigma]; grind⟩ = [(fun q => q = ⟨"q1", by simp only [statesList]; grind⟩ ∨ q = ⟨"q2", by simp only [statesList]; grind⟩)] := by
           unfold 𝓜'' TotalDFA.to_NFA 𝓜' 𝓜 NFA.to_TotalDFA List.toSet
           simp
-          apply funext
+          apply Set.ext
           intro x
-          apply propext
           constructor
           . intro hr
             rcases hr with ⟨r, r_mem, x_mem⟩
@@ -263,7 +229,20 @@ section Exercise3
           simp only [𝓜] at r_mem
           simp_all
 
-        have delta_q1_q2 : (fun q => q = ⟨"q0", by simp only [statesList]; grind⟩ ∨ q = ⟨"q2", by simp only [statesList]; grind⟩) ∈ 𝓜''.δ (fun q => q = ⟨"q1", by simp only [statesList]; grind⟩ ∨ q = ⟨"q2", by simp only [statesList]; grind⟩) ⟨'b', by simp only [sigma]; grind⟩ := by
+        have delta'_q1_q2_eq : 𝓜''.δ (fun q => q = ⟨"q1", by simp only [statesList]; grind⟩ ∨ q = ⟨"q2", by simp only [statesList]; grind⟩) ⟨'b', by simp only [sigma]; grind⟩ = [(fun q => q = ⟨"q0", by simp only [statesList]; grind⟩ ∨ q = ⟨"q2", by simp only [statesList]; grind⟩)] := by
+          unfold 𝓜'' TotalDFA.to_NFA 𝓜' 𝓜 NFA.to_TotalDFA List.toSet
+          simp --only [𝓜]
+          apply Set.ext
+          intro q
+          constructor
+          . intro q_mem
+            simp only [Membership.mem] at *
+            rcases q_mem with ⟨r, r_eq, q_mem⟩
+
+            sorry
+          . sorry
+
+        have delta'_q1_q2 : (fun q => q = ⟨"q0", by simp only [statesList]; grind⟩ ∨ q = ⟨"q2", by simp only [statesList]; grind⟩) ∈ 𝓜''.δ (fun q => q = ⟨"q1", by simp only [statesList]; grind⟩ ∨ q = ⟨"q2", by simp only [statesList]; grind⟩) ⟨'b', by simp only [sigma]; grind⟩ := by
           simp only [𝓜'', TotalDFA.to_NFA, 𝓜', NFA.to_TotalDFA, 𝓜]
           simp
           apply Set.ext
@@ -283,15 +262,13 @@ section Exercise3
               . simp only [hq, false_or] at q_mem
                 rw [q_mem]
                 constructor
-
                 sorry
           . intro q_mem
             rcases q_mem with ⟨r, r_mem, q_mem⟩
             simp only [Membership.mem] at *
-
             sorry
 
-        have mem_step2 := step (a := ⟨'b', by simp only [sigma]; grind⟩) mem_step (fun q => q = ⟨"q0", by simp only [statesList]; grind⟩ ∨ q = ⟨"q2", by simp only [statesList]; grind⟩) delta_q1_q2
+        have mem_step2 := step (a := ⟨'b', by simp only [sigma]; grind⟩) mem_step (fun q => q = ⟨"q0", by simp only [statesList]; grind⟩ ∨ q = ⟨"q2", by simp only [statesList]; grind⟩) delta'_q1_q2
         rcases mem_step2 with ⟨r, r_mem, mem_sim⟩
         specialize delta_undef ⟨'b', by simp only [sigma]; grind⟩
         contradiction
