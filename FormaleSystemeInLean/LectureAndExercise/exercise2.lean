@@ -42,25 +42,11 @@ section Exercise3
     def Q := subtype_of_list statesList
     def ⅀ := subtype_of_list sigma
 
-    deriving instance Fintype, BEq for Q, ⅀
+    deriving instance Fintype, DecidableEq for Q, ⅀
 
-    -- generisch machen
-    instance : Fintype (Option Q) where
-      elems := statesList.attach.map (some · ) ++ [.none]
-      complete := by
-        intro q
-        simp only [List.mem_append, List.mem_map, List.mem_attach, true_and, Subtype.exists, List.mem_cons, List.not_mem_nil, or_false]
-        have some_mem (r : Q) : some r ∈ statesList.attach.map (some · ) ++ [.none] := by simp
-        by_cases hq : q = none
-        . apply Or.inr; exact hq
-        . rw [← Ne.eq_1, Option.ne_none_iff_exists] at hq
-          rcases hq with ⟨r, r_eq⟩
-          rcases r with ⟨v, p⟩
-          apply Or.inl
-          exists v, p
+    instance (T : Fintype Q) : Fintype (Option Q) := fin_option T
 
     instance : Fintype (Set Q) := inferInstance
-    deriving instance DecidableEq for Q
 
     instance : Inter (Powertype Q) where
       inter A B := fun e => e ∈ A ∧ e ∈ B
