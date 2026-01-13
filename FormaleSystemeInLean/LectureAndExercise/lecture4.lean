@@ -5,7 +5,6 @@ set_option linter.unusedSectionVars false
 
 -- TO DO VL 4:
 -- VL4: NFAs mit nur einem Start-/Endzustand sind äquivalent zu normalen NFAs (nur evtl.)
--- Äquivalenz von NFAs und DFAs mittels Potenzmengenkonstruktion
 -- VL 4, Folie 30: NFAs können exponentiell kleiner sein als DFAs (Beispiel)
 
 structure NFA (Q : Type u) (Sigma : Type v) [Fintype Q] [Fintype Sigma] where
@@ -13,8 +12,7 @@ structure NFA (Q : Type u) (Sigma : Type v) [Fintype Q] [Fintype Sigma] where
   Q0 : List Q
   F : List Q
 
--- TODO: Fintype (Option Q) should be inferrable from Fintype Q
-variable {Q : Type u} {Sigma : Type v} [Fintype Q] [Fintype Sigma] [Fintype (Option Q)] [BEq Q] [BEq (Set Q)] [DecidableEq Q]
+variable {Q : Type u} {Sigma : Type v} [Fintype Q] [Fintype Sigma]
 
 def NFA.δ_word (nfa : NFA Q Sigma) (R : List Q) : (Word Sigma) → List Q
   | .nil => R
@@ -101,10 +99,7 @@ def DFA.to_NFA (M : DFA Q Sigma) : NFA Q Sigma where
   Q0 := [M.q0]
   F := M.F
 
-def List.filterPred (l : List α) (P : α -> Prop) [DecidablePred P] : List α :=
-  l.filter (fun a => decide (P a))
-
-def NFA.to_TotalDFA (M : NFA Q Sigma) : TotalDFA (Powertype Q) Sigma where
+def NFA.to_TotalDFA (M : NFA Q Sigma) [DecidableEq Q] [DecidableEq (Set Q)] : TotalDFA (Powertype Q) Sigma where
   δ := fun R a => fun q => ∃ r ∈ R, q ∈ M.δ r a
   q0 := M.Q0.toSet
   F := Fintype.elems.filter (fun x => M.F.toSet ∩ x != ∅)
@@ -133,7 +128,7 @@ theorem totalDFA_NFA_δ_word_eq (M : TotalDFA Q Sigma) (w : Word Sigma) (q : Q) 
   | cons a v ih =>
     simp only [NFA.δ_word, TotalDFA.δ_word, Membership.mem]
     have aux := ih (M.δ q a)
-    simp -- mit was muss ich simpen?
+    simp only [List.flatMap_cons, List.flatMap_nil, List.append_nil]
     exact aux
 
 theorem totalDFA_NFA_lang_eq (M : TotalDFA Q Sigma) : M.to_NFA.Language = M.Language := by
@@ -179,7 +174,7 @@ theorem totalDFA_NFA_lang_eq (M : TotalDFA Q Sigma) : M.to_NFA.Language = M.Lang
       . simp only [TotalDFA.to_NFA]
         exact w_mem
 
-theorem δ_NFA_eq_δ_TotalDFA (M : NFA Q Sigma) (a : Sigma) (R : List Q) : M.to_TotalDFA.δ R.toSet a = (M.δ_word R [a]).toSet := by
+theorem δ_NFA_eq_δ_TotalDFA (M : NFA Q Sigma) (a : Sigma) (R : List Q) [DecidableEq Q] [DecidableEq (Set Q)] : M.to_TotalDFA.δ R.toSet a = (M.δ_word R [a]).toSet := by
   simp only [NFA.to_TotalDFA, NFA.δ_word]
   unfold List.toSet
   apply funext
@@ -187,7 +182,7 @@ theorem δ_NFA_eq_δ_TotalDFA (M : NFA Q Sigma) (a : Sigma) (R : List Q) : M.to_
   rw [List.mem_flatMap]
   rfl
 
-theorem δ_word_eq_DFA_NFA (M : NFA Q Sigma) (w : Word Sigma) (R : List Q) [BEq (Powertype Q)] : (M.δ_word R w).toSet = M.to_TotalDFA.δ_word R.toSet w := by
+theorem δ_word_eq_DFA_NFA (M : NFA Q Sigma) (w : Word Sigma) (R : List Q) [DecidableEq Q] [DecidableEq (Powertype Q)] : (M.δ_word R w).toSet = M.to_TotalDFA.δ_word R.toSet w := by
   apply Set.ext
   intro q
   induction w generalizing q R with
@@ -201,21 +196,18 @@ theorem δ_word_eq_DFA_NFA (M : NFA Q Sigma) (w : Word Sigma) (R : List Q) [BEq 
     unfold List.toSet at *
     simp only [Membership.mem] at *
     grind
-    --sorry
-
-
 
 -- "not_empty_contains_element" but for boolean inequality
-theorem ne_empty_contains_element (B : Set α) [BEq (Set α)] [LawfulBEq (Set α)] : B != ∅ -> ∃ a, a ∈ B := by
+theorem ne_empty_contains_element (B : Set α) [DecidableEq (Set α)] : B != ∅ -> ∃ a, a ∈ B := by
   intro neq
   apply Classical.byContradiction
   intro contra
   rw [not_exists] at contra
   have aux := Set.empty_eq B contra
   rw [aux] at neq
-  simp at neq
+  simp only [bne_self_eq_false, Bool.false_eq_true] at neq
 
-theorem NFA_totalDFA_lang_eq (M : NFA Q Sigma) [BEq (Powertype Q)] [LawfulBEq (Set Q)] : M.to_TotalDFA.Language = M.Language := by
+theorem NFA_totalDFA_lang_eq (M : NFA Q Sigma) [DecidableEq Q] [DecidableEq (Set Q)] : M.to_TotalDFA.Language = M.Language := by
   apply Set.ext
   intro w
   unfold TotalDFA.Language

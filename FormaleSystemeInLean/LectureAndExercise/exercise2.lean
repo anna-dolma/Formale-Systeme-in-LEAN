@@ -39,35 +39,17 @@ section Exercise3
     def statesList := ["q0", "q1", "q2"]
     def sigma := ['a', 'b']
 
-    def Q := { q : String // q ∈ statesList }
-    def ⅀ := { a : Char // a ∈ sigma }
+    def Q := subtype_of_list statesList
+    def ⅀ := subtype_of_list sigma
 
-    instance : Fintype Q where
-      elems := statesList.attach
-      complete := by
-        intro q
-        rcases q with ⟨v, p⟩
-        unfold statesList at p
-        simp only [List.attach, Q, statesList, List.attachWith, List.pmap]
-        grind
+    deriving instance Fintype, BEq for Q, ⅀
 
-    instance : Fintype ⅀ where
-      elems := sigma.attach
-      complete := by
-        intro a
-        rcases a with ⟨v, p⟩
-        unfold sigma at p
-        simp only [List.attach, ⅀, sigma, List.attachWith, List.pmap]
-        grind
-
-    instance : BEq Q where
-      beq := fun q r => if q.val = r.val then true else false
-
+    -- generisch machen
     instance : Fintype (Option Q) where
       elems := statesList.attach.map (some · ) ++ [.none]
       complete := by
         intro q
-        simp --only [List.mem_map]
+        simp only [List.mem_append, List.mem_map, List.mem_attach, true_and, Subtype.exists, List.mem_cons, List.not_mem_nil, or_false]
         have some_mem (r : Q) : some r ∈ statesList.attach.map (some · ) ++ [.none] := by simp
         by_cases hq : q = none
         . apply Or.inr; exact hq
@@ -78,24 +60,13 @@ section Exercise3
           exists v, p
 
     instance : Fintype (Set Q) := inferInstance
+    deriving instance DecidableEq for Q
 
     instance : Inter (Powertype Q) where
       inter A B := fun e => e ∈ A ∧ e ∈ B
 
-    instance : BEq (Set Q) where
-      beq := sorry--fun X Y => if X = Y then true else false
-
-    instance : BEq (Powertype Q) := sorry
-
-    instance : LawfulBEq (Set Q) where
-      rfl := by sorry
-      eq_of_beq := sorry
-
-    instance : Fintype (Option (Powertype Q)) := sorry
-    instance : BEq (Set (Powertype Q)) := sorry
+    instance : DecidableEq (Set Q) := sorry
     instance : DecidableEq (Powertype Q) := sorry
-
-    deriving instance DecidableEq for Q
 
     def 𝓜 : NFA Q ⅀ where
       δ := fun q σ =>
@@ -107,7 +78,6 @@ section Exercise3
           | "q1" => match σ.val with
             | 'b' => [⟨"q0", by simp only [statesList]; grind⟩, ⟨"q2", by simp only [statesList]; grind⟩]
             | _ => []
-          | "q2" => []
           | _ => []
       Q0 := [⟨"q0", by simp only [statesList]; grind⟩]
       F := [⟨"q2", by simp only [statesList]; grind⟩]
@@ -115,7 +85,7 @@ section Exercise3
     def 𝓜' : TotalDFA (Powertype Q) ⅀ := 𝓜.to_TotalDFA
     def 𝓜'' : NFA (Powertype Q) ⅀ := 𝓜'.to_NFA
 
-    theorem part_b : ∃ (nfa1 : NFA (Powertype Q) ⅀) (nfa2 : NFA Q ⅀), nfa1.Language ⊆ nfa2.Language ∧ ∀ (r : Set ((Powertype Q) × Q)), ¬∃ (sim : NFASimulation nfa1 nfa2), sim.rel = r := by
+    theorem part_b : ∃ (nfa1 : NFA (Powertype Q) ⅀) (nfa2 : NFA Q ⅀), nfa1.Language ⊆ nfa2.Language ∧ ¬∃ (sim : NFASimulation nfa1 nfa2), True := by
       exists 𝓜'', 𝓜
       constructor
       . intro w w_mem
@@ -128,26 +98,32 @@ section Exercise3
         rw [← lang_eq2] at lang_eq1
         rw [← lang_eq1]
         exact w_mem
-      . intro rel
-        intro contra
-        rcases contra with ⟨sim, sim_eq⟩
+      . intro sim
+
+        let q0 : Q := ⟨"q0", by simp only [statesList]; grind⟩
+        let q1 : Q := ⟨"q1", by simp only [statesList]; grind⟩
+        let q2 : Q := ⟨"q2", by simp only [statesList]; grind⟩
+        let Q0 : Set Q := fun q => q = q0
+        let b : ⅀ := ⟨'b', by simp only [sigma]; grind⟩
+
+        rcases sim with ⟨sim, _⟩
         rcases sim with ⟨sim, start, step, final⟩
 
-        have q01_mem : (fun q => q = ⟨"q0", by simp only [statesList]; grind⟩) ∈ 𝓜''.Q0 := by
-          unfold 𝓜'' TotalDFA.to_NFA 𝓜' 𝓜 NFA.to_TotalDFA List.toSet
+        have q01_mem : Q0 ∈ 𝓜''.Q0 := by
+          unfold Q0 q0 𝓜'' TotalDFA.to_NFA 𝓜' 𝓜 NFA.to_TotalDFA List.toSet
           simp
-        have q02_mem : ⟨"q0", by simp only [statesList]; grind⟩ ∈ 𝓜.Q0 := by unfold 𝓜; simp
-        have q02_eq : 𝓜.Q0 = [⟨"q0", by simp only [statesList]; grind⟩] := by unfold 𝓜; simp
+        have q02_mem : q0 ∈ 𝓜.Q0 := by unfold q0 𝓜; simp
+        have q02_eq : 𝓜.Q0 = [q0] := by unfold q0 𝓜; simp
 
-        have start_mem : sim (fun q => q = ⟨"q0", by simp only [statesList]; grind⟩, ⟨"q0", by simp only [statesList]; grind⟩) := by
-          have aux := start (fun q => q = ⟨"q0", by simp only [statesList]; grind⟩) q01_mem
+        have start_mem : sim (Q0, q0) := by
+          have aux := start Q0 q01_mem
           rcases aux with ⟨q02, q02_mem', mem_sim⟩
           rw [q02_eq, List.mem_singleton] at q02_mem'
           rw [q02_mem'] at mem_sim
           exact mem_sim
 
-        have delta'_q0_eq : 𝓜''.δ (fun q => q = ⟨"q0", by simp only [statesList]; grind⟩) ⟨'b', by simp only [sigma]; grind⟩ = [(fun q => q = ⟨"q1", by simp only [statesList]; grind⟩ ∨ q = ⟨"q2", by simp only [statesList]; grind⟩)] := by
-          unfold 𝓜'' TotalDFA.to_NFA 𝓜' 𝓜 NFA.to_TotalDFA List.toSet
+        have delta'_q0_eq : 𝓜''.δ Q0 b = [(fun q => q = q1 ∨ q = q2)] := by
+          unfold Q0 q0 q1 q2 b 𝓜'' TotalDFA.to_NFA 𝓜' 𝓜 NFA.to_TotalDFA List.toSet
           simp
           apply Set.ext
           intro x
@@ -159,34 +135,42 @@ section Exercise3
             simp at x_mem
             exact x_mem
           . intro x_eq
-            exists ⟨"q0", by simp only [statesList]; grind⟩
+            exists q0
             constructor
-            . simp only [Membership.mem]
-            . simp
+            . simp only [q0, Membership.mem]
+            . simp [q0]
               exact x_eq
 
-        have delta_q0_eq : 𝓜.δ ⟨"q0", by simp only [statesList]; grind⟩ ⟨'b', by simp only [sigma]; grind⟩ = [⟨"q1", by simp only [statesList]; grind⟩, ⟨"q2", by simp only [statesList]; grind⟩] := by simp only [𝓜]
+        have delta_q0_eq : 𝓜.δ q0 b = [q1, q2] := by unfold b q0 q1 q2; simp only [𝓜]
 
-        have mem_step : sim ((fun q => q = ⟨"q1", by simp only [statesList]; grind⟩ ∨ q = ⟨"q2", by simp only [statesList]; grind⟩), ⟨"q2", by simp only [statesList]; grind⟩) := by
-          have aux := step (a := ⟨'b', by simp only [sigma]; grind⟩) start_mem
-          have mem_delta : (fun q => q = ⟨"q1", by simp only [statesList]; grind⟩ ∨ q = ⟨"q2", by simp only [statesList]; grind⟩) ∈ 𝓜''.δ (fun q => q = ⟨"q0", by simp only [statesList]; grind⟩) ⟨'b', by simp only [sigma]; grind⟩ := by grind
-          specialize aux (fun q => q = ⟨"q1", by simp only [statesList]; grind⟩ ∨ q = ⟨"q2", by simp only [statesList]; grind⟩)
+        have mem_step : sim ((fun q => q = q1 ∨ q = q2), q2) := by
+          have aux := step (a := b) start_mem
+          have mem_delta : (fun q => q = q1 ∨ q = q2) ∈ 𝓜''.δ Q0 b := by grind
+          specialize aux (fun q => q = q1 ∨ q = q2)
           have aux2 := aux mem_delta
           rcases aux2 with ⟨r, r_mem, mem_sim⟩
           rw [delta_q0_eq] at r_mem
 
-          have nmem_q1 : ¬sim ((fun q => q = ⟨"q1", by simp only [statesList]; grind⟩ ∨ q = ⟨"q2", by simp only [statesList]; grind⟩), ⟨"q1", by simp only [statesList]; grind⟩) := by
+          have nmem_q1 : ¬sim ((fun q => q = q1 ∨ q = q2), q1) := by
             intro contra
-            have mem_F : (fun q => q = ⟨"q1", by simp only [statesList]; grind⟩ ∨ q = ⟨"q2", by simp only [statesList]; grind⟩) ∈ 𝓜''.F := by
-              simp only [𝓜'', TotalDFA.to_NFA, 𝓜', NFA.to_TotalDFA, List.mem_filter, Fintype.elems, List.mem_map]
+            have mem_F : (fun q => q = q1 ∨ q = q2) ∈ 𝓜''.F := by
+              simp only [q1, q2, 𝓜'', TotalDFA.to_NFA, 𝓜', NFA.to_TotalDFA, List.mem_filter, Fintype.elems, List.mem_map]
               constructor
-              . sorry
+              . exists [q1, q2]
+                constructor
+                . apply powerlist
+                  simp
+                  have : statesList.attach = Fintype.elems (α := Q) := rfl
+                  rw [← this]
+                  simp [statesList]
+                . unfold q1 q2 List.toSet
+                  simp
               . unfold 𝓜 List.toSet
                 simp
                 intro contra'
-                let X : (Powertype Q) := (fun e => e = ⟨"q2", by simp only [statesList]; grind⟩)
-                let Y : (Powertype Q) := fun q => q = ⟨"q1", by simp only [statesList]; grind⟩ ∨ q = ⟨"q2", by simp only [statesList]; grind⟩
-                have inter : X ∩ Y = (fun q => q = ⟨"q2", by simp only [statesList]; grind⟩) := by
+                let X : (Powertype Q) := (fun e => e = q2)
+                let Y : (Powertype Q) := fun q => q = q1 ∨ q = q2
+                have inter : X ∩ Y = (fun q => q = q2) := by
                   apply Set.ext
                   intro t
                   constructor
@@ -201,8 +185,8 @@ section Exercise3
                     . simp only [Y, Membership.mem]; apply Or.inr; exact t_mem
                 simp only [X, Y] at inter
                 rw [Set.empty_iff] at contra'
-                have nmem := contra' ⟨"q2", by simp only [statesList]; grind⟩
-                have mem : ⟨"q2", by simp only [statesList]; grind⟩ ∈ X ∩ Y := by
+                have nmem := contra' q2
+                have mem : q2 ∈ X ∩ Y := by
                   simp only [X, Y, inter]
                   simp only [Membership.mem]
                 simp only [X, Y] at mem
@@ -210,67 +194,53 @@ section Exercise3
 
             have aux3 := final contra mem_F
             simp only [𝓜, List.mem_singleton] at aux3
-            contradiction
+            grind
 
-          have r_neq : ¬r = ⟨"q1", by simp only [statesList]; grind⟩ := by
+          have r_neq : ¬r = q1 := by
             intro contra
             rw [contra] at mem_sim
             contradiction
-          have r_eq : r = ⟨"q2", by simp only [statesList]; grind⟩ := by
+          have r_eq : r = q2 := by
             simp at r_mem
             grind
 
           rw [r_eq] at mem_sim
           exact mem_sim
 
-        have delta_undef : ∀ (a : ⅀), ¬∃ r, r ∈ 𝓜.δ ⟨"q2", by simp only [statesList]; grind⟩ a := by
+        have delta_undef : ∀ (a : ⅀), ¬∃ r, r ∈ 𝓜.δ q2 a := by
           intro a contra
           rcases contra with ⟨r, r_mem⟩
-          simp only [𝓜] at r_mem
+          simp only [q2, 𝓜] at r_mem
           simp_all
 
-        have delta'_q1_q2_eq : 𝓜''.δ (fun q => q = ⟨"q1", by simp only [statesList]; grind⟩ ∨ q = ⟨"q2", by simp only [statesList]; grind⟩) ⟨'b', by simp only [sigma]; grind⟩ = [(fun q => q = ⟨"q0", by simp only [statesList]; grind⟩ ∨ q = ⟨"q2", by simp only [statesList]; grind⟩)] := by
-          unfold 𝓜'' TotalDFA.to_NFA 𝓜' 𝓜 NFA.to_TotalDFA List.toSet
-          simp --only [𝓜]
-          apply Set.ext
-          intro q
-          constructor
-          . intro q_mem
-            simp only [Membership.mem] at *
-            rcases q_mem with ⟨r, r_eq, q_mem⟩
-
-            sorry
-          . sorry
-
-        have delta'_q1_q2 : (fun q => q = ⟨"q0", by simp only [statesList]; grind⟩ ∨ q = ⟨"q2", by simp only [statesList]; grind⟩) ∈ 𝓜''.δ (fun q => q = ⟨"q1", by simp only [statesList]; grind⟩ ∨ q = ⟨"q2", by simp only [statesList]; grind⟩) ⟨'b', by simp only [sigma]; grind⟩ := by
-          simp only [𝓜'', TotalDFA.to_NFA, 𝓜', NFA.to_TotalDFA, 𝓜]
+        have delta'_q1_q2 : (fun q => q = q0 ∨ q = q2) ∈ 𝓜''.δ (fun q => q = q1 ∨ q = q2) b := by
+          simp only [q0, q1, q2, b, 𝓜'', TotalDFA.to_NFA, 𝓜', NFA.to_TotalDFA, 𝓜]
           simp
           apply Set.ext
           intro q
           constructor
           . intro q_mem
-            simp only [Membership.mem]
-            exists ⟨"q1", by simp only [statesList]; grind⟩
+            exists q1
             constructor
             . apply Or.inl; rfl
-            . simp only [Membership.mem] at q_mem
-              simp
-              by_cases hq : q = ⟨"q0", by simp only [statesList]; grind⟩
-              . rw [hq]
-
-                sorry
-              . simp only [hq, false_or] at q_mem
-                rw [q_mem]
-                constructor
-                sorry
+            . cases q_mem with
+              | inl q_mem =>
+                simp [q1, q_mem]
+              | inr q_mem =>
+                simp [q1, q_mem]
           . intro q_mem
             rcases q_mem with ⟨r, r_mem, q_mem⟩
-            simp only [Membership.mem] at *
-            sorry
+            cases r_mem with
+            | inl r_mem =>
+              simp only [r_mem, String.reduceEq, imp_self, List.mem_cons, List.not_mem_nil, or_false] at q_mem
+              simp only [Membership.mem]
+              exact q_mem
+            | inr r_mem =>
+              simp [r_mem] at q_mem
 
-        have mem_step2 := step (a := ⟨'b', by simp only [sigma]; grind⟩) mem_step (fun q => q = ⟨"q0", by simp only [statesList]; grind⟩ ∨ q = ⟨"q2", by simp only [statesList]; grind⟩) delta'_q1_q2
+        have mem_step2 := step (a := b) mem_step (fun q => q = q0 ∨ q = q2) delta'_q1_q2
         rcases mem_step2 with ⟨r, r_mem, mem_sim⟩
-        specialize delta_undef ⟨'b', by simp only [sigma]; grind⟩
+        specialize delta_undef b
         contradiction
 
   end d

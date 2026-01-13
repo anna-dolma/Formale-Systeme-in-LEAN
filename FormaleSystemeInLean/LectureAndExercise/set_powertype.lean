@@ -1,16 +1,6 @@
-
--- inspired by mathlib
-class Fintype (α : Type u) where
-  elems : List α
-  complete : ∀ a : α, a ∈ elems
+import FormaleSystemeInLean.LectureAndExercise.Fintype
 
 def Set (α : Type u) := α -> Prop
-
-/-def Set.elem (S : Set α) (a : α) [DecidablePred S] : Bool :=
-  decide (S a)
-
-def Set.toList (S : Set α) [Fintype α] [DecidablePred S] : List α :=
-  Fintype.elems.filter (fun x => S.elem x) -/
 
 -- The following type class instances are just allowing us to use some basic notation like ∅, ∈ or ∪ with the right definitions..
 instance : EmptyCollection (Set α) where

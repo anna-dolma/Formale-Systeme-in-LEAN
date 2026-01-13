@@ -61,6 +61,7 @@ def pcp4 : List (String × String) := [("a", "baa"), ("ab", "aa"), ("bba", "bb")
 
 --#eval pcp_k pcp2 10
 #eval pcp_k_find_solutions pcp4 3
+#eval pcp_k_find_solutions pcp3 10
 #eval [("bba", "bb"), ("ab", "aa"), ("bba", "bb"), ("a", "baa")].concat_ith
 
 def List.powerset_lists [BEq α] (l : List α) : List (List α) :=
