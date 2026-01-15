@@ -153,4 +153,3 @@ theorem DFA_eq_totalDFA (M : TotalDFA Q Sigma) : M.Language = (M.to_DFA).Languag
     rw [← q0_eq]
     rw [qf_eq]
     exact qf_mem
-
