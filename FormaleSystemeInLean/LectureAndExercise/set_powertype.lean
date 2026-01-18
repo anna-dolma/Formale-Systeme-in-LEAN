@@ -364,32 +364,6 @@ theorem list_of_subset (X Y : Set α) (h : ∃ (l' : List α), Y = l'.toSet) : X
   . intro x_mem
     exact x_mem.right
 
-theorem dupfree_list_of_subset (X Y : Set α) (h : ∃ (l' : List α), Y = l'.toSet) : X ⊆ Y → ∃ (l : List α), X = l.toSet ∧ l.Nodup := by
-  intro sub
-  rcases h with ⟨l', l'_eq⟩
-  exists (l'.filter (fun e =>
-      have := Classical.propDecidable (e ∈ X)
-      decide (e ∈ X)
-    ))
-  unfold List.toSet
-  simp --only [List.mem_filter]
-  constructor
-  . apply Set.ext
-    intro x
-    simp only [Membership.mem]
-    constructor
-    . intro x_mem
-      constructor
-      . have x_mem_Y := sub x x_mem
-        rw [l'_eq] at x_mem_Y
-        simp only [List.toSet, Membership.mem] at x_mem_Y
-        exact x_mem_Y
-      . exact x_mem
-    . intro x_mem
-      exact x_mem.right
-  . simp only [List.Nodup]
-    sorry
-
 theorem list_of_subset' (T : Fintype α) (X Y : Set α) (h : ∃ (l' : List α), Y = l'.toSet ∧ l'.length ≤ T.elems.length) : X ⊆ Y → ∃ (l : List α), X = l.toSet ∧ l ∈ (T.elems.power_upto T.elems.length)  := by
   intro sub
   rcases h with ⟨l', l'_eq, l'_length⟩
@@ -447,7 +421,7 @@ instance [T : Fintype α] [BEq α] : Fintype (Powertype α) where
     rw [l_eq, List.mem_map]
     exists l
 
-instance [T : Fintype α] [BEq α] : Fintype (Set α) where
+instance [T : Fintype α] [DecidableEq α] : Fintype (Set α) where
   elems := (T.elems.power_upto T.elems.length).map (fun x => x.toSet)
   complete := by
     intro S

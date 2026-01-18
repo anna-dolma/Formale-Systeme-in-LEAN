@@ -12,7 +12,7 @@ structure TotalDFA (Q : Type u) (Sigma : Type v) [Fintype Q] [Fintype Sigma] whe
   q0: Q
   F: List Q
 
-variable {Q : Type u} {Sigma : Type v} [Fintype Q] [Fintype Sigma] [Fintype (Option Q)]
+variable {Q : Type u} {Sigma : Type v} [Fintype Q] [Fintype Sigma]
 
 def DFA.δ_word (dfa : DFA Q Sigma) (q : Q) : (Word Sigma) -> Option Q
 | .nil => .some q

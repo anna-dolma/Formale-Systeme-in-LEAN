@@ -13,7 +13,7 @@ instance (l : List α) : Fintype (subtype_of_list l) where
     simp only [List.attach, subtype_of_list, List.attachWith]
     grind
 
-instance fin_option (T : Fintype α) : Fintype (Option α) where
+instance [T : Fintype α] : Fintype (Option α) where
   elems := T.elems.map (some · ) ++ [.none]
   complete := by
     intro a
