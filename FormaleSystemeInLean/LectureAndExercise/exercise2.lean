@@ -44,8 +44,6 @@ section Exercise3
 
     deriving instance Fintype, DecidableEq for Q, ⅀
 
-    instance (T : Fintype Q) : Fintype (Option Q) := fin_option T
-
     instance : Fintype (Set Q) := inferInstance
 
     instance : Inter (Powertype Q) where
@@ -54,58 +52,8 @@ section Exercise3
     def states_power := statesList.power_upto 3
     #eval states_power.removeDups
 
-    theorem Q_set_looks_like (X : Set Q) (q p r : Q) (neq : q ≠ p ∧ q ≠ r ∧ p ≠ r) : (X = ∅) ∨
-        (X = fun z => z = q) ∨
-        (X = fun z => z = q ∨ z = p) ∨
-        (X = fun z => z = q ∨ z = p ∨ z = r) := by
-      by_cases h : X = ∅
-      . apply Or.inl
-        exact h
-      . apply Or.inr
-        rw [← Ne.eq_1] at h
-        have aux := Set.not_empty_contains_element X h
-        rcases aux with ⟨t, t_mem⟩
-        have t_eq : t = p ∨ t = q ∨ t = r := by
-          rcases t with ⟨t_val, t_p⟩
-          rcases p with ⟨p_val, p_p⟩
-          rcases q with ⟨q_val, q_p⟩
-          rcases r with ⟨r_val, r_p⟩
-          unfold statesList at *
-          grind
 
-        by_cases ht : t = q
-        . apply Or.inl
-          rw [← ht]
-
-          sorry
-        .
-          sorry
-
-    instance (T : Fintype Q) (X : Set Q) (q : Q) : Decidable (X q) := by
-      have exists_l := list_of_fintype_set (α := Q) T X
-      have q_mem_iff : ∃ (l : List Q), X = l.toSet ∧ (X q ↔ q ∈ l) := by
-        rcases exists_l with ⟨l, X_eq⟩
-        exists l
-        constructor
-        . exact X_eq
-        . rw [X_eq]
-          unfold List.toSet
-          rfl
-      have q_val : ∀ r ∈ X, r.val ∈ ["q0", "q1", "q2"] := by
-        intro r r_mem
-        rcases r with ⟨v, p⟩
-        grind
-
-      sorry
-
-    instance (X : Set Q) : DecidablePred X := by
-      unfold DecidablePred
-      intro q
-
-      sorry
-    instance : DecidableEq (Set Q) := sorry
-
-    instance : DecidableEq (Powertype Q) := sorry
+    variable {h : ∀ (S : Set Q), DecidablePred S}
 
     def 𝓜 : NFA Q ⅀ where
       δ := fun q σ =>

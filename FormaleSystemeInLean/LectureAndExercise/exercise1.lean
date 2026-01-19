@@ -3,8 +3,6 @@ import FormaleSystemeInLean.LectureAndExercise.lemmas
 
 set_option linter.unusedSectionVars false
 
--- NOW FOR THE ACTUAL EXERCISE
-
 variable {Sigma : Type u} [BEq Sigma]
 
 section Exercise1
@@ -283,7 +281,8 @@ section Exercise2
       . intro w_mem
         rcases w_mem with ⟨n, w_mem⟩
         cases n
-        . trivial
+        . rcases w_mem
+          simp only [Membership.mem]
         . exfalso
           rcases w_mem with ⟨v, v_mem, x, x_mem, w_eq⟩
           unfold Language.pow at x_mem
@@ -399,12 +398,14 @@ section Exercise2
         rw [Language.mem_pow]
         exists [['a'],['b']]
         constructor
-        . trivial
+        . simp only [List.flatten_cons, List.flatten_nil, List.cons_append, List.nil_append]
         . constructor
-          . simp
+          . simp only [List.length_cons, List.length_nil, Nat.zero_add, Nat.reduceAdd]
           . intro w w_mem
-            simp only [Membership.mem]
-            simp_all
+            rcases w_mem
+            . simp only [Membership.mem, true_or]
+            . simp only [Membership.mem]
+              sorry
 
       intro contra
       apply n_mem
