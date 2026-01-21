@@ -2,13 +2,6 @@ import FormaleSystemeInLean.LectureAndExercise.lemmas
 import FormaleSystemeInLean.LectureAndExercise.set_powertype
 set_option linter.unusedSectionVars false
 
--- TO DO: für Mengen
-/-
-- assoziativität ???
-- distributivgesetze
-- de morgansche regeln
--/
-
 theorem Set.inter_commutative (X Y : Set α) : X ∩ Y = Y ∩ X := by
   apply Set.ext
   intro e
@@ -46,6 +39,40 @@ theorem Set.union_commutative (X Y : Set α) : X ∪ Y = Y ∪ X := by
     . intro e_mem_y
       apply Or.inl
       exact e_mem_y
+
+theorem distr_inter_union (X Y Z : Set α) : X ∩ (Y ∪ Z) = (X ∩ Y) ∪ (X ∩ Z) := by
+  apply Set.ext
+  intro x
+  constructor
+  . intro x_mem
+    rcases x_mem with ⟨l, r⟩
+    by_cases h : x ∈ Y
+    . apply Or.inl
+      constructor
+      . exact l
+      . exact h
+    . have x_mem_Z : x ∈ Z := by
+        rcases r with inl | inr
+        . contradiction
+        . exact inr
+      apply Or.inr
+      constructor
+      . exact l
+      . exact x_mem_Z
+  . intro x_mem
+    rcases x_mem with inl | inr
+    rcases inl with ⟨x_mem_X, x_mem_Y⟩
+    . constructor
+      . exact x_mem_X
+      . apply Or.inl
+        exact x_mem_Y
+    . rcases inr with ⟨x_mem_X, x_mem_Z⟩
+      constructor
+      . exact x_mem_X
+      . apply Or.inr
+        exact x_mem_Z
+
+theorem distr_union_inter (X Y Z : Set α) : X ∪ (Y ∩ Z) = (X ∪ Y) ∩ (X ∪ Z) := by sorry
 
 -- From now on, we pick some alphabet Sigma. In fact, we do not even care about the type of Sigma. In can basically be anything.
 variable {Sigma : Type u} [BEq Sigma] -- geht auch decidable equality
@@ -85,6 +112,10 @@ def another_word : Word Char := ['A','l','t','b','a','u','c','h','a','r','m','e'
 -- For every alphabet Sigma, there is an empty word ε. Since we defined words as Lists
 -- with elements of type Sigma, ε is just the empty list [].
 -- ε is the identity element for concatenation of words:
+
+-- Example from slide 30 (follows from list lemmas)
+theorem epsilon_prefix_infix_suffix (w : Word Sigma) : [].IsPrefix w ∧ [].IsInfix w ∧ [].IsSuffix w := by
+  simp only [List.nil_prefix, List.nil_infix, List.nil_suffix, and_self]
 
 -- Auxiliary result for the actual theorem
 theorem append_nil : ∀ (L : List α), L.append [] = L := by
@@ -536,9 +567,40 @@ theorem add_exp [BEq Sigma] (L : Language Sigma) (m n : Nat) : (L^n) * L^m = L^(
         conv => right; right; rw [List.take_length]
         rw [List.take_append_drop]
 
--- gleicher beweis wie in übung nur andersrum?
+theorem pow_as_concat_comm (L : Language Sigma) (n : Nat) : L * L^(n-1) = (L^(n-1)) * L := by
+  rw (occs := [1, 4]) [← first_power L]
+  rw [add_exp L 1 (n-1)]
+  rw [add_exp L (n-1) 1, Nat.add_comm]
+
 theorem kstar_plus (L : Language Sigma) : L⁺ = L* * L := by
-  sorry
+  apply Set.ext
+  intro w
+  constructor
+  . intro w_mem
+    rcases w_mem with ⟨n, gt, w_mem⟩
+    rw [pow_as_concat] at w_mem
+    . rw [pow_as_concat_comm] at w_mem
+      rcases w_mem with ⟨u, u_mem, v, v_mem, w_eq⟩
+      exists u
+      constructor
+      . unfold Language.kstar
+        simp only [Membership.mem]
+        exists (n-1)
+      . exists v
+    . exact gt
+  . intro w_mem
+    rcases w_mem with ⟨u, u_mem, v, v_mem, w_eq⟩
+    rcases u_mem with ⟨n, u_mem⟩
+    unfold Language.plus
+    simp only [Membership.mem]
+    exists (n+1)
+    constructor
+    . simp only [gt_iff_lt, Nat.zero_lt_succ]
+    . rw [← add_exp L, first_power]
+      exists u
+      constructor
+      . exact u_mem
+      . exists v
 
 -- concatenation of languages is distributive over union
 theorem distr_concat_union_l (L₁ L₂ L₃ : Language Sigma) : (L₁ ∪ L₂) * L₃ = (L₁ * L₃) ∪ (L₂ * L₃) := by
