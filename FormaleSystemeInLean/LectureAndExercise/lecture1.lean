@@ -1,5 +1,5 @@
-import FormaleSystemeInLean.LectureAndExercise.lemmas
-import FormaleSystemeInLean.LectureAndExercise.set_powertype
+import FormaleSystemeInLean.LectureAndExercise.List
+import FormaleSystemeInLean.LectureAndExercise.Powertype
 set_option linter.unusedSectionVars false
 
 
