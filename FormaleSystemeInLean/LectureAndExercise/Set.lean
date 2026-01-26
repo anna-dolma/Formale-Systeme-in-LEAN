@@ -1,0 +1,180 @@
+import FormaleSystemeInLean.LectureAndExercise.Fintype
+
+def Set (α : Type u) := α -> Prop
+
+-- The following type class instances are just allowing us to use some basic notation like ∅, ∈ or ∪ with the right definitions..
+instance : EmptyCollection (Set α) where
+  emptyCollection := fun _ => False
+
+instance : Membership α (Set α) where
+  mem S a := S a
+
+instance : Union (Set α) where
+  union A B := fun e => e ∈ A ∨ e ∈ B
+
+instance : Inter (Set α) where
+  inter A B := fun e => e ∈ A ∧ e ∈ B
+
+instance : HasSubset (Set α) where
+  Subset A B := ∀ e, e ∈ A -> e ∈ B
+
+instance : HasSSubset (Set α) where
+  SSubset A B := A ⊆ B ∧ ¬ B ⊆ A
+
+instance : SDiff (Set α) where
+  sdiff A B := fun e => e ∈ A ∧ ¬(e ∈ B)
+
+def Set.powerset (α : Type u) (S : Set α) := fun x => x ⊆ S
+
+def Set.map (f : α → β) (S : Set α) [Fintype α] : Set β :=
+  fun b => ∃ (a : α), a ∈ S ∧ f a = b
+
+-- Set extensionality: Two sets are equal if they contain the same elements. This is not something we define but we can prove it!
+theorem Set.ext (X Y : Set α) : (∀ e, e ∈ X ↔ e ∈ Y) -> X = Y := by
+  intro h; apply funext; intro e; apply propext; specialize h e; exact h
+
+
+theorem Set.inter_commutative (X Y : Set α) : X ∩ Y = Y ∩ X := by
+  apply Set.ext
+  intro e
+  constructor
+  . intro e_mem
+    constructor
+    . rcases e_mem with ⟨e_x, e_y⟩
+      exact e_y
+    . rcases e_mem with ⟨e_x, e_y⟩
+      exact e_x
+  . intro e_mem
+    constructor
+    . rcases e_mem with ⟨e_x, e_y⟩
+      exact e_y
+    . rcases e_mem with ⟨e_x, e_y⟩
+      exact e_x
+
+theorem Set.union_commutative (X Y : Set α) : X ∪ Y = Y ∪ X := by
+  apply Set.ext
+  intro e
+  constructor
+  . intro e_mem
+    apply Or.elim e_mem
+    . intro e_mem_x
+      apply Or.inr
+      exact e_mem_x
+    . intro e_mem_y
+      apply Or.inl
+      exact e_mem_y
+  . intro e_mem
+    apply Or.elim e_mem
+    . intro e_mem_x
+      apply Or.inr
+      exact e_mem_x
+    . intro e_mem_y
+      apply Or.inl
+      exact e_mem_y
+
+theorem distr_inter_union (X Y Z : Set α) : X ∩ (Y ∪ Z) = (X ∩ Y) ∪ (X ∩ Z) := by
+  apply Set.ext
+  intro x
+  constructor
+  . intro x_mem
+    rcases x_mem with ⟨l, r⟩
+    by_cases h : x ∈ Y
+    . apply Or.inl
+      constructor
+      . exact l
+      . exact h
+    . have x_mem_Z : x ∈ Z := by
+        rcases r with inl | inr
+        . contradiction
+        . exact inr
+      apply Or.inr
+      constructor
+      . exact l
+      . exact x_mem_Z
+  . intro x_mem
+    rcases x_mem with inl | inr
+    rcases inl with ⟨x_mem_X, x_mem_Y⟩
+    . constructor
+      . exact x_mem_X
+      . apply Or.inl
+        exact x_mem_Y
+    . rcases inr with ⟨x_mem_X, x_mem_Z⟩
+      constructor
+      . exact x_mem_X
+      . apply Or.inr
+        exact x_mem_Z
+
+theorem distr_union_inter (X Y Z : Set α) : X ∪ (Y ∩ Z) = (X ∪ Y) ∩ (X ∪ Z) := by
+  apply Set.ext
+  intro x
+  constructor
+  . intro x_mem
+    by_cases hx : x ∈ X
+    . constructor
+      . apply Or.inl; exact hx
+      . apply Or.inl; exact hx
+    . have x_mem_yz : x ∈ Y ∩ Z := by
+        rcases x_mem with inl | inr
+        . contradiction
+        . exact inr
+      rcases x_mem_yz with ⟨mem_y, mem_z⟩
+      constructor
+      . apply Or.inr; exact mem_y
+      . apply Or.inr; exact mem_z
+  . intro x_mem
+    rcases x_mem with ⟨mem_xy, mem_xz⟩
+    by_cases hx : x ∈ X
+    . apply Or.inl
+      exact hx
+    . apply Or.inr
+      constructor
+      . rcases mem_xy with inl | inr
+        . contradiction
+        . exact inr
+      . rcases mem_xz with inl | inr
+        . contradiction
+        . exact inr
+
+theorem Set.not_empty_contains_element (X : Set α) : X ≠ ∅ -> ∃ e, e ∈ X := by
+  intro neq
+  apply Classical.byContradiction
+  intro contra
+  apply neq
+  apply Set.ext
+  intro e
+  simp only [not_exists] at contra
+  specialize contra e
+  simp only [contra, false_iff]
+  simp [Membership.mem, EmptyCollection.emptyCollection]
+
+theorem Set.empty_eq (A : Set α) : (∀ (x : α), ¬x ∈ A) -> A = ∅ := by
+  intro h
+  apply Set.ext
+  intro a
+  simp only [EmptyCollection.emptyCollection]
+  constructor
+  . intro e_mem
+    simp only [Membership.mem]
+    apply h a
+    exact e_mem
+  . intro e_mem
+    simp only [Membership.mem] at e_mem
+
+theorem Set.empty_iff (A : Set α) : A = ∅ ↔ ∀ a, a ∉ A := by
+  constructor
+  . intro A_eq
+    simp only [EmptyCollection.emptyCollection] at *
+    intro a
+    intro contra
+    simp only [A_eq, Membership.mem] at contra
+  . intro h
+    apply Set.ext
+    intro e
+    simp only [EmptyCollection.emptyCollection]
+    constructor
+    . intro e_mem
+      simp only [Membership.mem]
+      apply h e
+      exact e_mem
+    . intro e_mem
+      simp only [Membership.mem] at e_mem

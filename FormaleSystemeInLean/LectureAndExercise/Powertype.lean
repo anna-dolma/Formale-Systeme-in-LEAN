@@ -1,83 +1,8 @@
 import FormaleSystemeInLean.LectureAndExercise.Fintype
+import FormaleSystemeInLean.LectureAndExercise.Set
 
 set_option linter.unusedSectionVars false
 
-def Set (α : Type u) := α -> Prop
-
--- The following type class instances are just allowing us to use some basic notation like ∅, ∈ or ∪ with the right definitions..
-instance : EmptyCollection (Set α) where
-  emptyCollection := fun _ => False
-
-instance : Membership α (Set α) where
-  mem S a := S a
-
-instance : Union (Set α) where
-  union A B := fun e => e ∈ A ∨ e ∈ B
-
-instance : Inter (Set α) where
-  inter A B := fun e => e ∈ A ∧ e ∈ B
-
-instance : HasSubset (Set α) where
-  Subset A B := ∀ e, e ∈ A -> e ∈ B
-
-instance : HasSSubset (Set α) where
-  SSubset A B := A ⊆ B ∧ ¬ B ⊆ A
-
-instance : SDiff (Set α) where
-  sdiff A B := fun e => e ∈ A ∧ ¬(e ∈ B)
-
-def Set.powerset (α : Type u) (S : Set α) := fun x => x ⊆ S
-
-def Set.map (f : α → β) (S : Set α) [Fintype α] : Set β :=
-  fun b => ∃ (a : α), a ∈ S ∧ f a = b
-
--- Set extensionality: Two sets are equal if they contain the same elements. This is not something we define but we can prove it!
-theorem Set.ext (X Y : Set α) : (∀ e, e ∈ X ↔ e ∈ Y) -> X = Y := by
-  intro h; apply funext; intro e; apply propext; specialize h e; exact h
-
-theorem Set.not_empty_contains_element (X : Set α) : X ≠ ∅ -> ∃ e, e ∈ X := by
-  intro neq
-  apply Classical.byContradiction
-  intro contra
-  apply neq
-  apply Set.ext
-  intro e
-  simp only [not_exists] at contra
-  specialize contra e
-  simp only [contra, false_iff]
-  simp [Membership.mem, EmptyCollection.emptyCollection]
-
-theorem Set.empty_eq (A : Set α) : (∀ (x : α), ¬x ∈ A) -> A = ∅ := by
-  intro h
-  apply Set.ext
-  intro a
-  simp only [EmptyCollection.emptyCollection]
-  constructor
-  . intro e_mem
-    simp only [Membership.mem]
-    apply h a
-    exact e_mem
-  . intro e_mem
-    simp only [Membership.mem] at e_mem
-
-theorem Set.empty_iff (A : Set α) : A = ∅ ↔ ∀ a, a ∉ A := by
-  constructor
-  . intro A_eq
-    simp only [EmptyCollection.emptyCollection] at *
-    intro a
-    intro contra
-    simp only [A_eq, Membership.mem] at contra
-  . intro h
-    apply Set.ext
-    intro e
-    simp only [EmptyCollection.emptyCollection]
-    constructor
-    . intro e_mem
-      simp only [Membership.mem]
-      apply h e
-      exact e_mem
-    . intro e_mem
-      simp only [Membership.mem] at e_mem
 
 def Powertype (α : Type u) := Set α
 
@@ -219,51 +144,6 @@ theorem powerlist (T : Fintype α) (l : List α) : l.length ≤ T.elems.length -
       rw [List.length_cons]
       exact aux2
 
-/-theorem exists_mem_powertype (T : Fintype α) (S : Set α) [BEq α] [DecidablePred S] : ∃ (l : List α), l = S.toList ∧ l ∈ (T.elems.power_upto T.elems.length)  := by
-  exists S.toList
-  constructor
-  . rfl
-  . have l_len : S.toList.length ≤ T.elems.length := by
-      unfold Set.toList
-      apply List.length_filter_le
-    have mem := powerlist T S.toList l_len
-    exact mem -/
-
-/-instance (S : Set α) [Fintype α] : DecidablePred S := by
-
-  sorry -/
-
-/-theorem elem_iff_mem (S : Set α) (a : α) [Fintype α] : S.elem a = true ↔ a ∈ S := by
-  unfold Set.elem
-  simp only [Membership.mem]
-  grind
-
-theorem toList_toSet (l : List α) (S : Set α) (T : Fintype α) : l = S.toList → S = l.toSet := by
-  intro eq
-  apply Set.ext
-  intro e
-  constructor
-  . intro e_mem
-    unfold List.toSet
-    unfold Set.toList at eq
-    rw [eq]
-    simp --only [Membership.mem, Set.elem]
-    constructor
-    . have complete := T.complete
-      specialize complete e
-      exact complete
-    . rw [elem_iff_mem]
-      . exact e_mem
-  . intro e_mem
-    unfold List.toSet at e_mem
-    rw [eq] at e_mem
-    unfold Set.toList at e_mem
-    simp_all --only [Membership.mem, Set.elem] at e_mem
-    rcases e_mem with ⟨e_mem, e_elem⟩
-    rw [elem_iff_mem] at e_elem
-    exact e_elem
-    -/
-
 theorem empty_set_if_empty_type (T : Fintype α) (S : Set α) : T.elems = [] → S = ∅ := by
   intro h
   apply Classical.byContradiction
@@ -277,20 +157,6 @@ theorem empty_set_if_empty_type (T : Fintype α) (S : Set α) : T.elems = [] →
   specialize aux a
   rw [h] at aux
   contradiction
-
-/-instance [T : Fintype α] [BEq α] : Fintype (Set α) where
-  elems := (T.elems.power_upto T.elems.length).map (fun x => x.toSet)
-  complete := by
-    intro S
-    have exists_l := exists_mem_powertype T S
-    rcases exists_l with ⟨l, l_eq, l_mem⟩
-    rw [List.mem_map]
-    exists l
-    constructor
-    . exact l_mem
-    . have aux := toList_toSet l S T l_eq
-      symm at aux
-      exact aux -/
 
 theorem complete_set_iff [Fintype α] (S : Set α) : (S = fun _ => True) ↔ ∀ (x : α), x ∈ S := by
   constructor
@@ -431,102 +297,3 @@ instance [T : Fintype α] [DecidableEq α] : Fintype (Set α) where
     rcases exists_l with ⟨l, l_eq, l_mem⟩
     rw [l_eq, List.mem_map]
     exists l
-
-def List.removeDups [DecidableEq α] : List α -> List α
-  | [] => []
-  | hd::tl => if hd ∈ tl then tl.removeDups else hd::(tl.removeDups)
-
-theorem List.mem_removeDups [DecidableEq α] (l : List α) : ∀ a, a ∈ l ↔ a ∈ l.removeDups := by
-  induction l with
-  | nil =>
-    intro a
-    simp only [removeDups]
-  | cons b l' ih =>
-    unfold removeDups
-    intro a
-    by_cases b_mem : b ∈ l'
-    . simp only [b_mem, ite_true, List.mem_cons, ih]
-      by_cases a_eq : a = b
-      . simp only [a_eq, true_or]
-        specialize ih b
-        have aux : b ∈ l'.removeDups := ih.mp b_mem
-        simpa using aux
-      . simp only [a_eq, false_or]
-    . simp only [b_mem, ite_false, List.mem_cons, ih]
-
-
-theorem toSet_eq_iff_lists_have_same_members (X Y : Set α) (l k : List α) : l.toSet = X → k.toSet = Y → ((∀ a, a ∈ l ↔ a ∈ k) ↔ X = Y) := by
-  intro X_eq Y_eq
-  unfold List.toSet at *
-  constructor
-  . intro mem_iff
-    apply Set.ext
-    intro x
-    constructor
-    . intro x_mem
-      rw [← X_eq] at x_mem
-      rw [← Y_eq]
-      simp only [Membership.mem] at *
-      specialize mem_iff x
-      apply mem_iff.mp x_mem
-    . intro x_mem
-      rw [← Y_eq] at x_mem
-      rw [← X_eq]
-      simp only [Membership.mem] at *
-      specialize mem_iff x
-      apply mem_iff.mpr x_mem
-  . intro xy_eq
-    intro x
-    rw [← X_eq, ← Y_eq] at xy_eq
-    grind
-
-
---to do: für jede menge über einem fintype gibt es eine mit decidable pred
-
-theorem set_eq_iff_filter_has_same_members (α : Type u) (h : ∀ (S : Set α), DecidablePred S) (T : Fintype α) (X Y : Set α) : X = Y ↔ (∀ a, a ∈ T.elems.filter ( · ∈ X) ↔ a ∈ T.elems.filter ( · ∈ Y)) := by
-  constructor
-  . intro xy_eq
-    intro x
-    simp only [List.mem_filter, decide_eq_true_eq, and_congr_right_iff]
-    intro x_mem
-    rw [xy_eq]
-  . intro h
-    simp only [List.mem_filter, decide_eq_true_eq, and_congr_right_iff] at h
-    apply Set.ext
-    intro x
-    have x_mem_elems := T.complete x
-    apply h x x_mem_elems
-
-theorem set_eq_iff_filter_eq (α : Type u) (h : ∀ (S : Set α), DecidablePred S) (T : Fintype α) (X Y : Set α) : X = Y ↔ T.elems.filter ( · ∈ X) = T.elems.filter ( · ∈ Y) := by
-  constructor
-  . intro eq
-    rw [eq]
-  . intro eq
-    apply Set.ext
-    intro x
-    constructor
-    . intro x_mem
-      have x_mem_filter : x ∈ T.elems.filter ( · ∈ X ) := by
-        simp only [List.mem_filter, decide_eq_true_eq]
-        constructor
-        . apply T.complete x
-        . exact x_mem
-      rw [eq] at x_mem_filter
-      grind
-    . intro x_mem
-      have x_mem_filter : x ∈ T.elems.filter ( · ∈ Y ) := by
-        simp only [List.mem_filter, decide_eq_true_eq]
-        constructor
-        . apply T.complete x
-        . exact x_mem
-      rw [← eq] at x_mem_filter
-      grind
-
-instance {α : Type u} [T : Fintype α] [DecidableEq α] [h : ∀ (S : Set α), DecidablePred S] : DecidableEq (Set α) := by
-  intro X Y
-  have aux := set_eq_iff_filter_eq α h T X Y
-  simp only [aux]
-  by_cases h : List.filter (fun x => decide (x ∈ X)) Fintype.elems
-    = List.filter (fun x => decide (x ∈ Y)) Fintype.elems
-  . apply isTrue h
-  . apply isFalse h
