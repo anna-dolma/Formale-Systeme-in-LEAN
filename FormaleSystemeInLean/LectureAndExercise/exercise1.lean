@@ -1,5 +1,5 @@
 import FormaleSystemeInLean.LectureAndExercise.lecture1
-import FormaleSystemeInLean.LectureAndExercise.lemmas
+--import FormaleSystemeInLean.LectureAndExercise.lemmas
 
 set_option linter.unusedSectionVars false
 

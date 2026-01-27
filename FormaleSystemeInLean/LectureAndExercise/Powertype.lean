@@ -4,6 +4,14 @@ import FormaleSystemeInLean.LectureAndExercise.Set
 set_option linter.unusedSectionVars false
 
 
+/-
+The powerset DFA (as it is defined in Lecture 4) has subsets of Q (the states of the original NFA)
+as its states. However, the automaton definitions in this formalisation don't use finite sets of states
+but instead lists over a Fintype Q. So we need to define something like a powerset but for lists.
+We also need to prove that the resulting "powerlist" contains only finitely many elements
+because the states of an NFA have to be of a Fintype.
+-/
+
 def Powertype (α : Type u) := Set α
 
 instance : Membership α (Powertype α) where
@@ -11,12 +19,36 @@ instance : Membership α (Powertype α) where
 
 def List.toSet (l : List α) : Set α := fun e => e ∈ l
 
+/-
+The powerset of a set X just contains all possible subsets of X. (See Set.lean)
+We define the power of a list l as the list containing all lists up to the length if l with elements from l.
+The following recursive function computes all lists with elements from a given list l that have
+a length up to n. This includes lists with duplicate elements and all possible sequences.
+We do this by repeatedly appending elements of l to all lists we currently have.
+-/
 def List.power_upto (l : List α) (n : Nat) : List (List α) :=
   let rec loop : Nat → List (List α)
     | 0 => [[]]
     | n+1 => let prev := loop n; prev ++ (prev.flatMap (fun l' => l.map fun e => e:: l'))
   loop n
 
+/-
+The following example showcases how the power of a list is computed. As you can see, all the
+different lists are added to the powerlist multiple times.
+-/
+#eval [0, 1, 2, 3].power_upto 4
+--#eval ([0, 1, 2, 3].power_upto 4).eraseDups
+
+/-
+After defining the power of a list, we can use this function to compute the Powertype of a Fintype
+and prove that it is also finite. As a reminder: a Fintype is a type with a corresponding list ("elems")
+containing all things of this type (refer to Fintype.lean for further information).
+
+The following 4 theorems are auxiliary results required to prove that for a Fintype T with elements of type α
+T.elems.power_upto (T.elems.length) contains all lists of type List α that are at most of the same length as T.elems.
+-/
+
+-- the result of [].power_upto n is [[]] for all n.
 theorem nil_power (n : Nat) (l : List α) : l = [] -> l.power_upto n = [[]] := by
   intro l_eq
   induction n with
@@ -26,12 +58,50 @@ theorem nil_power (n : Nat) (l : List α) : l = [] -> l.power_upto n = [[]] := b
   | succ n ih =>
     unfold List.power_upto List.power_upto.loop
     subst l
-    simp -- mit was?
+    simp only [List.map_nil]
     unfold List.power_upto at ih
     rw [ih]
-    simp
+    simp only [List.flatMap_cons, List.flatMap_nil, List.append_nil]
 
-theorem mem_power_upto_n (T : Fintype α) (l : List α) (n : Nat) : n ≤ T.elems.length → l.length = n → l ∈ T.elems.power_upto n := by
+
+theorem mem_power_upto_n (T : Fintype α) (l : List α) : l.length ≤ T.elems.length → l ∈ T.elems.power_upto (l.length) := by
+  intro l_length
+  induction n_eq : l.length generalizing l with
+  | zero =>
+    unfold List.power_upto List.power_upto.loop
+    rw [← List.eq_nil_iff_length_eq_zero] at n_eq
+    rw [n_eq]
+    simp only [List.mem_cons, List.not_mem_nil, or_false]
+  | succ n ih =>
+    have l_neq_nil : l ≠ [] := by
+        have l_len_gz : l.length > 0 := by
+          rw [← Nat.succ_eq_add_one] at n_eq
+          grind
+        rw [List.ne_nil_iff_length_pos]
+        exact l_len_gz
+    have l_eq : ∃ a l', l = a::l' ∧ l'.length = n := by
+      rw [List.ne_nil_iff_exists_cons] at l_neq_nil
+      rcases l_neq_nil with ⟨a, l', l_eq⟩
+      exists a, l'
+      constructor
+      . exact l_eq
+      . grind
+    rcases l_eq with ⟨a, l', l_eq, l'_len⟩
+    have l'_len_le : l'.length ≤ T.elems.length := by grind
+    have l'_mem := ih l' l'_len_le l'_len
+    unfold List.power_upto List.power_upto.loop
+    simp only [List.mem_append, List.mem_flatMap, List.mem_map]
+    apply Or.inr
+    exists l'
+    constructor
+    . exact l'_mem
+    . exists a
+      constructor
+      . exact T.complete a
+      . symm; exact l_eq
+
+-- T.elems.power_upto n contains every List α of length n
+theorem mem_power_upto_n' (T : Fintype α) (l : List α) (n : Nat) : n ≤ T.elems.length → l.length = n → l ∈ T.elems.power_upto n := by
   intro n_le l_len
   cases h : T.elems with
   | nil =>
@@ -63,7 +133,7 @@ theorem mem_power_upto_n (T : Fintype α) (l : List α) (n : Nat) : n ≤ T.elem
       grind
     | succ n ih =>
       unfold List.power_upto List.power_upto.loop
-      simp
+      simp only [List.map_cons, List.mem_append, List.mem_flatMap, List.mem_cons, List.mem_map]
       have l_neq_nil : l ≠ [] := by
         have l_len_gz : l.length > 0 := by
           rw [← Nat.succ_eq_add_one] at l_len
@@ -99,6 +169,7 @@ theorem mem_power_upto_n (T : Fintype α) (l : List α) (n : Nat) : n ≤ T.elem
           symm
           exact l_eq
 
+-- If a list l is contained in T.elems.power_upto n, then it is also an element of l ∈ T.elems.power_upto (n+1).
 theorem inclusion_succ (T : Fintype α) (l : List α) (n : Nat) : l.length ≤ T.elems.length -> l ∈ T.elems.power_upto n -> l ∈ T.elems.power_upto (n+1) := by
   intro l_len l_mem
   unfold List.power_upto List.power_upto.loop
@@ -113,7 +184,7 @@ theorem inclusion (T : Fintype α) (l : List α) (n : Nat) (m : Nat) : n ≤ m -
     simp_all
   | @step k b ih =>
     unfold List.power_upto List.power_upto.loop
-    simp
+    simp only [List.mem_append, List.mem_flatMap, List.mem_map]
     apply Or.inl
     exact ih
 
@@ -127,22 +198,22 @@ theorem powerlist (T : Fintype α) (l : List α) : l.length ≤ T.elems.length -
     rw [ht, Nat.le_zero, ← List.eq_nil_iff_length_eq_zero] at l_len
     rw [l_len, List.mem_singleton]
   | cons b s =>
-    have aux := inclusion_succ T l l.length l_len
-    have aux2 := mem_power_upto_n T l l.length l_len rfl
+    have incl := inclusion_succ T l l.length l_len
+    have mem_power := mem_power_upto_n T l l_len
     rw [ht, List.length_cons, Nat.le_add_one_iff] at l_len
     rcases l_len with inl | inr
-    . have test := aux aux2
+    . have test := incl mem_power
       rw [ht] at test
       rw [List.length_cons]
-      have aux3 := inclusion T l l.length s.length inl aux2
+      have aux3 := inclusion T l l.length s.length inl mem_power
       unfold List.power_upto List.power_upto.loop
-      simp
+      simp only [List.map_cons, List.mem_append, List.mem_flatMap, List.mem_cons, List.mem_map]
       apply Or.inl
       rw [← ht]
       exact aux3
-    . rw [inr, ht] at aux2
+    . rw [inr, ht] at mem_power
       rw [List.length_cons]
-      exact aux2
+      exact mem_power
 
 theorem empty_set_if_empty_type (T : Fintype α) (S : Set α) : T.elems = [] → S = ∅ := by
   intro h

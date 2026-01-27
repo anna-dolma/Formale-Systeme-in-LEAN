@@ -1,4 +1,5 @@
 import FormaleSystemeInLean.LectureAndExercise.lecture4
+import FormaleSystemeInLean.LectureAndExercise.FintypeSetDecidableEq
 
 section Exercise3
 
