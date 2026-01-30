@@ -178,3 +178,70 @@ theorem Set.empty_iff (A : Set α) : A = ∅ ↔ ∀ a, a ∉ A := by
       exact e_mem
     . intro e_mem
       simp only [Membership.mem] at e_mem
+
+theorem empty_set_if_empty_type (T : Fintype α) (S : Set α) : T.elems = [] → S = ∅ := by
+  intro h
+  apply Classical.byContradiction
+  intro contra
+  have exists_elem : ∃ a, a ∈ S := by
+    rw [← Ne.eq_1] at contra
+    apply Set.not_empty_contains_element
+    exact contra
+  rcases exists_elem with ⟨a, a_mem⟩
+  have aux := T.complete
+  specialize aux a
+  rw [h] at aux
+  contradiction
+
+theorem complete_set_iff [Fintype α] (S : Set α) : (S = fun _ => True) ↔ ∀ (x : α), x ∈ S := by
+constructor
+. intro eq
+  intro x
+  rw [eq]
+  simp only [Membership.mem]
+. intro h
+  apply Set.ext
+  intro x
+  constructor
+  . intro x_mem
+    simp only [Membership.mem]
+  . intro x_mem
+    grind
+
+def List.toSet (l : List α) : Set α := fun e => e ∈ l
+
+theorem complete_set_eq_fintype_elems (T : Fintype α) : T.elems.toSet = fun _ => True := by
+  apply Set.ext
+  intro x
+  constructor
+  . intro x_mem
+    trivial
+  . intro x_mem
+    have x_mem_elems := T.complete x
+    simp only [List.toSet, Membership.mem]
+    exact x_mem_elems
+
+theorem exists_not_mem_if_ne_complete_set (T : Fintype α) (S : Set α) : (S ≠ fun _ => True) → ∃ a, a ∉ S := by
+  intro ne
+  rw [Ne.eq_1] at ne
+  apply Classical.byContradiction
+  intro contra
+  simp at contra
+  have aux := complete_set_iff S
+  have S_eq := aux.mpr contra
+  contradiction
+
+  theorem ssubset_of_complete_set (T : Fintype α) (S : Set α) : (S ≠ fun _ => True) → S ⊂ (fun _ => True) := by
+  intro ne
+  constructor
+  . intro a a_mem
+    trivial
+  . intro h
+    have aux := exists_not_mem_if_ne_complete_set T S ne
+    rcases aux with ⟨x, x_nmem⟩
+    let complete_set : Set α := (fun a => True)
+    have x_mem : x ∈ complete_set := by
+      unfold complete_set
+      simp only [Membership.mem]
+    have x_mem_S : x ∈ S := h x x_mem
+    contradiction

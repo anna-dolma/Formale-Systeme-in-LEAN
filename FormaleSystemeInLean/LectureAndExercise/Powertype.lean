@@ -17,8 +17,6 @@ def Powertype (α : Type u) := Set α
 instance : Membership α (Powertype α) where
   mem S a := S a
 
-def List.toSet (l : List α) : Set α := fun e => e ∈ l
-
 /-
 The powerset of a set X just contains all possible subsets of X. (See Set.lean)
 We define the power of a list l as the list containing all lists up to the length if l with elements from l.
@@ -33,7 +31,7 @@ def List.power_upto (l : List α) (n : Nat) : List (List α) :=
   loop n
 
 /-
-The following example showcases how the power of a list is computed. As you can see, all the
+This showcases how the power of a list is computed. As you can see, all the
 different lists are added to the powerlist multiple times.
 -/
 #eval [0, 1, 2, 3].power_upto 4
@@ -63,7 +61,7 @@ theorem nil_power (n : Nat) (l : List α) : l = [] -> l.power_upto n = [[]] := b
     rw [ih]
     simp only [List.flatMap_cons, List.flatMap_nil, List.append_nil]
 
-
+-- T.elems.power_upto n contains every List α of length n
 theorem mem_power_upto_n (T : Fintype α) (l : List α) : l.length ≤ T.elems.length → l ∈ T.elems.power_upto (l.length) := by
   intro l_length
   induction n_eq : l.length generalizing l with
@@ -100,7 +98,7 @@ theorem mem_power_upto_n (T : Fintype α) (l : List α) : l.length ≤ T.elems.l
       . exact T.complete a
       . symm; exact l_eq
 
--- T.elems.power_upto n contains every List α of length n
+-- I left the old version of this theorem here as an example for an overly complicated proof.
 theorem mem_power_upto_n' (T : Fintype α) (l : List α) (n : Nat) : n ≤ T.elems.length → l.length = n → l ∈ T.elems.power_upto n := by
   intro n_le l_len
   cases h : T.elems with
@@ -188,6 +186,7 @@ theorem inclusion (T : Fintype α) (l : List α) (n : Nat) (m : Nat) : n ≤ m -
     apply Or.inl
     exact ih
 
+-- Now we can finally prove that the powerlist of T.elems contains all lists of length at most T.elems.length:
 theorem powerlist (T : Fintype α) (l : List α) : l.length ≤ T.elems.length -> l ∈ T.elems.power_upto T.elems.length := by
   intro l_len
   cases ht: T.elems with
@@ -215,71 +214,15 @@ theorem powerlist (T : Fintype α) (l : List α) : l.length ≤ T.elems.length -
       rw [List.length_cons]
       exact mem_power
 
-theorem empty_set_if_empty_type (T : Fintype α) (S : Set α) : T.elems = [] → S = ∅ := by
-  intro h
-  apply Classical.byContradiction
-  intro contra
-  have exists_elem : ∃ a, a ∈ S := by
-    rw [← Ne.eq_1] at contra
-    apply Set.not_empty_contains_element
-    exact contra
-  rcases exists_elem with ⟨a, a_mem⟩
-  have aux := T.complete
-  specialize aux a
-  rw [h] at aux
-  contradiction
+/-
+Now the goal is a Fintype-instance for Powertype α, given an instance Fintype α, or to phrase it differently:
+the Powertype of something finite is again finite. Since we defined Powertype as a set, the elements of the
+resulting instance have to be sets. We can achieve this by mapping each element of the powerlist to a set.
+It remains to prove that every Set α is contained in the resulting list of sets.
+-/
 
-theorem complete_set_iff [Fintype α] (S : Set α) : (S = fun _ => True) ↔ ∀ (x : α), x ∈ S := by
-  constructor
-  . intro eq
-    intro x
-    rw [eq]
-    simp only [Membership.mem]
-  . intro h
-    apply Set.ext
-    intro x
-    constructor
-    . intro x_mem
-      simp only [Membership.mem]
-    . intro x_mem
-      grind
-
-theorem complete_set_eq_fintype_elems (T : Fintype α) : T.elems.toSet = fun _ => True := by
-  apply Set.ext
-  intro x
-  constructor
-  . intro x_mem
-    trivial
-  . intro x_mem
-    have x_mem_elems := T.complete x
-    simp only [List.toSet, Membership.mem]
-    exact x_mem_elems
-
-theorem exists_not_mem_if_ne_complete_set (T : Fintype α) (S : Set α) : (S ≠ fun _ => True) → ∃ a, a ∉ S := by
-  intro ne
-  rw [Ne.eq_1] at ne
-  apply Classical.byContradiction
-  intro contra
-  simp at contra
-  have aux := complete_set_iff S
-  have S_eq := aux.mpr contra
-  contradiction
-
-theorem ssubset_of_complete_set (T : Fintype α) (S : Set α) : (S ≠ fun _ => True) → S ⊂ (fun _ => True) := by
-  intro ne
-  constructor
-  . intro a a_mem
-    trivial
-  . intro h
-    have aux := exists_not_mem_if_ne_complete_set T S ne
-    rcases aux with ⟨x, x_nmem⟩
-    let complete_set : Set α := (fun a => True)
-    have x_mem : x ∈ complete_set := by
-      unfold complete_set
-      simp only [Membership.mem]
-    have x_mem_S : x ∈ S := h x x_mem
-    contradiction
-
+-- If X is a subset of Y and there is a corresponding list for Y, then there must be a list for X as well.
+-- We need to assume that the predicate X is decidable here.
 theorem list_of_subset (X Y : Set α) (h : ∃ (l' : List α), Y = l'.toSet) : X ⊆ Y → ∃ (l : List α), X = l.toSet := by
   intro sub
   rcases h with ⟨l', l'_eq⟩
@@ -303,7 +246,9 @@ theorem list_of_subset (X Y : Set α) (h : ∃ (l' : List α), Y = l'.toSet) : X
   . intro x_mem
     exact x_mem.right
 
-theorem list_of_subset' (T : Fintype α) (X Y : Set α) (h : ∃ (l' : List α), Y = l'.toSet ∧ l'.length ≤ T.elems.length) : X ⊆ Y → ∃ (l : List α), X = l.toSet ∧ l ∈ (T.elems.power_upto T.elems.length)  := by
+-- If X is a subset of Y and the list for the superset Y has at most the length T.elems.length,
+-- then there is a list for X that is contained in the powerlist of T.elems.
+theorem mem_powerlist_of_subset (T : Fintype α) (X Y : Set α) (h : ∃ (l' : List α), Y = l'.toSet ∧ l'.length ≤ T.elems.length) : X ⊆ Y → ∃ (l : List α), X = l.toSet ∧ l ∈ (T.elems.power_upto T.elems.length)  := by
   intro sub
   rcases h with ⟨l', l'_eq, l'_length⟩
   exists (l'.filter (fun e =>
@@ -330,6 +275,9 @@ theorem list_of_subset' (T : Fintype α) (X Y : Set α) (h : ∃ (l' : List α),
       grind
     exact powerlist T (l'.filter (fun e => have := Classical.propDecidable (e ∈ X); decide (e ∈ X))) l_length
 
+-- Given a Fintype T with elements of type α, every Set containing elements of type α has a list with the same elements.
+-- We can prove this with the help of list_of_subset because every Set α is a subset of T.elems.toSet.
+-- Then the list for the superset Y is just T.elems itself.
 theorem list_of_fintype_set (T : Fintype α) (S : Set α) : ∃ (l : List α), S = l.toSet := by
   have sub : S ⊆ Fintype.elems.toSet := by
     intro x x_mem
@@ -338,6 +286,10 @@ theorem list_of_fintype_set (T : Fintype α) (S : Set α) : ∃ (l : List α), S
   have elems_list : ∃ (l : List α), T.elems.toSet = l.toSet := by exists T.elems
   apply list_of_subset S T.elems.toSet elems_list sub
 
+-- For the typeclass instance we need a list for each Set α. This list also needs to be an element of T.elems.power_upto T.elems.length.
+-- We already know how to obtain the list (see previous theorem). Obviously the length of T.elems is at most T.elems.length.
+-- Then we can apply mem_powerlist_of_subset using T.elems.toSet as the superset Y and the set S
+-- (for which we want to prove the existence of a list contained in the powerlist) as the subset X.
 theorem mem_powerlist_of_fintype_set (T : Fintype α) (S : Set α) : ∃ (l : List α), S = l.toSet ∧ l ∈ (T.elems.power_upto T.elems.length) := by
   have sub : S ⊆ Fintype.elems.toSet := by
     intro x x_mem
@@ -349,7 +301,7 @@ theorem mem_powerlist_of_fintype_set (T : Fintype α) (S : Set α) : ∃ (l : Li
     . rfl
     . rw [Nat.le_iff_lt_or_eq]
       apply Or.inr; rfl
-  apply list_of_subset' T S T.elems.toSet elems_list sub
+  apply mem_powerlist_of_subset T S T.elems.toSet elems_list sub
 
 instance [T : Fintype α] [BEq α] : Fintype (Powertype α) where
   elems := (T.elems.power_upto T.elems.length).map (fun x => x.toSet)
