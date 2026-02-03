@@ -54,6 +54,10 @@ instance : Decidable (['t', 'a', 'u', 'b'] <:+: some_word) := by
   apply isTrue
   rfl
 
+instance (w v : Word Char) : Decidable (w.IsInfix v) := by
+  unfold List.IsInfix
+  sorry
+
 -- Lean's built-in list type already offers predicates for prefix, infix and suffix as defined in the lecture (slide 30):
 #eval List.IsPrefix ['S','t','a','u','b'] some_word
 #eval List.IsInfix ['t','a','u','b'] some_word
@@ -373,7 +377,11 @@ theorem Language.mem_kstar (L : Language Sigma) (w : Word Sigma) : w ∈ L* ↔ 
         . exact v_mem
         . exists l'.flatten
 
--- TO DO: kann man das mit mem_kstar beweisen?
+def test : List (List (Word Char)) := [[['a','b'],['a']],[['b'],['a','b']]]
+#eval test.foldl ( · ++ · ) []
+#eval test.flatten
+
+-- TO DO: kann man das mit mem_kstar beweisen? (bzw umgekehrt)
 theorem Language.mem_pow (L : Language Sigma) (w : Word Sigma) : w ∈ L^n ↔ ∃ l : (List (Word Sigma)), w = l.flatten ∧ l.length = n ∧ (∀ u ∈ l, u ∈ L) := by
   constructor
   intro w_mem

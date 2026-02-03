@@ -1,9 +1,8 @@
 import FormaleSystemeInLean.LectureAndExercise.lecture1
---import FormaleSystemeInLean.LectureAndExercise.lemmas
 
 set_option linter.unusedSectionVars false
 
-variable {Sigma : Type u} [BEq Sigma]
+variable {Sigma : Type u} [DecidableEq Sigma]
 
 section Exercise1
 
@@ -149,12 +148,19 @@ section Exercise2
 
   section b
 
+  /-
+  In exercise sessions the solution given for 1.2b is usually somewhat informal.
+  We just argue that every word from the languages on the left hand side and the right hand side
+  starts and ends with an a and in between there can be arbitrary chains of a but never two bs in a row.
+  -/
+
     def L5 : Language Char := fun w => w = ['a', 'b'] ∨ w = ['a']
     def L8 : Language Char := fun w => w = ['b', 'a'] ∨ w = ['a']
     def L6 : Language Char := fun w => w = ['a']
     def L4 : Language Char := fun w => w ∈ L6 * L8*
     def L7 : Language Char := fun w => w ∈ L5* * L6
 
+    -- Auxiliary result for exercise 1.2b
     theorem aux2 : L5 * L6 = L6 * L8 := by
       apply Set.ext
       intro w
@@ -275,7 +281,7 @@ section Exercise2
             constructor
             . exact u'_mem
             . exists v'
-          . simp
+          . simp only [gt_iff_lt, Nat.zero_lt_succ]
 
   end b
 
@@ -467,9 +473,139 @@ theorem ex_2e (L₁ L₂ : Language Sigma) : (L₁* ∪ L₂*)* = (L₁ ∪ L₂
   apply Set.ext
   intro w
 
-  -- maybe we can be closer to the exercise solution by using something like the following as a helper result
-  have aux : ∀ w, w ∈ (L₁* ∪ L₂*)* ↔ ∃ (l : List (List (Word Sigma))), w = l.flatten.flatten ∧ ∀ u ∈ l, ((∀ x ∈ u, x ∈ L₁) ∨ (∀ x ∈ u, x ∈ L₂)) := by sorry
+  /-
+  in the exercise solution the inclusion (L₁* ∪ L₂*)* ⊆ (L₁ ∪ L₂)* is shown by arguing that every Word w from (L₁* ∪ L₂*)*
+  can be seen as a concatenation of words w₁...wₙ where each wᵢ is from (L₁* ∪ L₂*).
+  Then each wᵢ can again be expressed as a sequence of words x₁...xₙ where either each xᵢ is from L₁ or each xᵢ is from L₂.
+  But then the original word w is a sequence of words from L₁ and L₂, so w ∈ (L₁ ∪ L₂)*.
+  In Lean it is not quite as easy to switch between words and lists of words. A list of words cannot be equal to a word because the type does not match.
+  In lecture1 we have already shown that for a language L every word from L* is equal to a flattened list of words from L.
+  The following auxiliary result does something similar, but here we need to flatten the list twice because the language contains two stars.
+  -/
+  have aux : ∀ w, w ∈ (L₁* ∪ L₂*)* ↔ ∃ (l : List (List (Word Sigma))), w = l.flatten.flatten ∧ ∀ u ∈ l, ((∀ x ∈ u, x ∈ L₁) ∨ (∀ x ∈ u, x ∈ L₂)) := by
+    intro v
+    constructor
+    . intro v_mem
+      unfold Language.kstar at v_mem
+      rcases v_mem with ⟨n, v_mem⟩
+      induction n generalizing v with
+      | zero =>
+        exists []
+        simp only [List.flatten_nil]
+        constructor
+        . exact v_mem
+        . intro u u_mem
+          contradiction
+      | succ n ih =>
+        rcases v_mem with ⟨x, x_mem, y, y_mem, v_eq⟩
+        rcases ih y y_mem with ⟨l, y_eq, l_mem⟩
 
+        have x_eq : ∃ (l : List (Word Sigma)), x = l.flatten ∧ (∀ u, u ∈ l → u ∈ L₁ ∨ ∀ u, u ∈ l → u ∈ L₂) := by
+          rcases x_mem with inl | inr
+          . simp only [Language.mem_pow] at inl
+            rcases inl with ⟨n, l1, l1_eq, _, l1_mem⟩
+            exists l1
+            constructor
+            . exact l1_eq
+            . intro u u_mem
+              apply Or.inl
+              exact l1_mem u u_mem
+          . simp only [Language.mem_pow] at inr
+            rcases inr with ⟨n, l2, l2_eq, _, l2_mem⟩
+            exists l2
+            constructor
+            . exact l2_eq
+            . intro _ _
+              apply Or.inr
+              intro u u_mem
+              exact l2_mem u u_mem
+
+        rcases x_eq with ⟨k, x_eq, k_mem⟩
+        exists [k]++l
+        constructor
+        . simp only [List.cons_append, List.nil_append, List.flatten_cons, List.flatten_append]
+          rw [← y_eq, ← x_eq, ← mul_eq_append, v_eq]
+        . intro u u_mem
+          simp only [List.cons_append, List.nil_append, List.mem_cons] at u_mem
+          rcases u_mem with inl | inr
+          . rw [inl]
+            grind
+          . specialize l_mem u inr
+            exact l_mem
+
+    . intro h
+      rcases h with ⟨l, v_eq, l_mem⟩
+      induction l generalizing v with
+      | nil =>
+        exists 0
+      | cons head tail ih =>
+        simp only [List.mem_cons, forall_eq_or_imp] at l_mem
+        rcases l_mem with ⟨mem_head, mem_tail⟩
+        simp only [List.flatten_cons, List.flatten_append] at v_eq
+        have h_tail := ih tail.flatten.flatten rfl mem_tail
+        rcases h_tail with ⟨n, h_tail⟩
+        exists n+1
+        exists head.flatten
+        constructor
+        . by_cases head_eq : (∀ (x : Word Sigma), x ∈ head → x ∈ L₁)
+          . apply Or.inl
+            rw [Language.mem_kstar]
+            exists head
+          . apply Or.inr
+            simp only [head_eq, false_or] at mem_head
+            rw [Language.mem_kstar]
+            exists head
+        . exists tail.flatten.flatten
+
+  constructor
+  . intro w_mem
+    specialize aux w
+    rw [aux] at w_mem
+    rcases w_mem with ⟨l, w_eq, l_mem⟩
+    rw [Language.mem_kstar]
+    exists l.flatten
+    constructor
+    . exact w_eq
+    . intro x x_mem
+      rw [List.mem_flatten] at x_mem
+      rcases x_mem with ⟨l', l'_mem, x_mem⟩
+      specialize l_mem l' l'_mem
+      rcases l_mem with inl | inr
+      . specialize inl x x_mem
+        apply Or.inl; exact inl
+      . specialize inr x x_mem
+        apply Or.inr; exact inr
+  . intro w_mem
+    have L1_subset : L₁ ⊆ L₁* := by
+        intro y y_mem
+        exists 1
+        rw [first_power]
+        exact y_mem
+    have L2_subset : L₂ ⊆ L₂* := by
+      intro y y_mem
+      exists 1
+      rw [first_power]
+      exact y_mem
+    have union_subset : L₁ ∪ L₂ ⊆ L₁* ∪ L₂* := by
+      intro x x_mem
+      rcases x_mem with inl | inr
+      . constructor
+        apply L1_subset; exact inl
+      . apply Or.inr
+        apply L2_subset; exact inr
+    rw [Language.mem_kstar] at w_mem
+    rcases w_mem with ⟨l, w_eq, l_mem⟩
+    rw [Language.mem_kstar]
+    exists l
+    constructor
+    . exact w_eq
+    . intro u u_mem
+      have u_mem_union : u ∈ L₁ ∪ L₂ := by
+        apply l_mem u; exact u_mem
+      apply union_subset
+      exact u_mem_union
+
+  /-
   constructor
   . intro w_mem
     rcases w_mem with ⟨n, w_mem⟩
@@ -544,6 +680,7 @@ theorem ex_2e (L₁ L₂ : Language Sigma) : (L₁* ∪ L₂*)* = (L₁ ∪ L₂
         apply l_mem u; exact u_mem
       apply union_subset
       exact u_mem_union
+      -/
 
 theorem ex_2f_1 (L : Language Sigma) : L * L* = L⁺ := by
   apply Set.ext
