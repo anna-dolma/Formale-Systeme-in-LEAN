@@ -324,7 +324,7 @@ theorem pow_as_concat (L : Language Sigma) : n > 0 → L^n = L * L^(n-1) := by
       . exact p_mem
       . exists q
 
-/--
+/--!
 In some cases, it makes sense to think about the kleene star of some language L as the language
 containing words consisting of a list of words from L. We can prove that this is equivalent to our original definition.
 -/
@@ -375,7 +375,7 @@ theorem Language.mem_kstar' (L : Language Sigma) (w : Word Sigma) : w ∈ L* ↔
         . exists l'.flatten
 
 /--
-We first show a more general result:
+We first show a more general result: for any word from L^n, we can find a corresponding list of length n.
 -/
 theorem Language.mem_pow (L : Language Sigma) (w : Word Sigma) : w ∈ L^n ↔ ∃ l : (List (Word Sigma)), w = l.flatten ∧ l.length = n ∧ (∀ u ∈ l, u ∈ L) := by
   constructor
@@ -582,7 +582,7 @@ theorem kstar_plus (L : Language Sigma) : L⁺ = L* * L := by
       . exact u_mem
       . exists v
 
--- concatenation of languages is distributive over union
+/-- concatenation of languages is distributive over union (right side) -/
 theorem distr_concat_union_l (L₁ L₂ L₃ : Language Sigma) : (L₁ ∪ L₂) * L₃ = (L₁ * L₃) ∪ (L₂ * L₃) := by
   apply Set.ext
   intro w
@@ -619,7 +619,7 @@ theorem distr_concat_union_l (L₁ L₂ L₃ : Language Sigma) : (L₁ ∪ L₂)
         exact u_mem
       . exists v
 
--- this obviously applies when concatenating a language from the right:
+/-- concatenation of languages is distributive over union (left side side) -/
 theorem distr_concat_union_r (L₁ L₂ L₃ : Language Sigma) : L₁ * (L₂ ∪ L₃) = (L₁ * L₂) ∪ (L₁ * L₃) := by
   apply Set.ext
   intro w
@@ -661,8 +661,11 @@ theorem distr_concat_union_r (L₁ L₂ L₃ : Language Sigma) : L₁ * (L₂ �
           exact x_mem
         . exact w_eq
 
--- The language containing only ε is the identity element for concatenation of languages.
--- Since concatenation is not a commutative operation, we need a proof for {ε} * L = L and for L * {ε} = L:
+/--!
+The language containing only ε is the identity element for concatenation of languages.
+Since concatenation is not a commutative operation, we need a proof for {ε} * L = L and for L * {ε} = L.
+-/
+
 theorem L_eps_mul : ∀ (L : Language Sigma), L ≠ L_empty → L_eps * L = L := by
   intro L ln
   apply Set.ext
@@ -701,7 +704,7 @@ theorem mul_L_eps : ∀ (L : Language Sigma), L ≠ L_empty → L * L_eps = L :=
       rw [epsilon_concat]
       simp only [Membership.mem, true_and]
 
--- The empty language ∅ is an annihilating element for concatenation.
+/-- The empty language ∅ is an annihilating element for concatenation. (left) -/
 theorem empty_mul : ∀ (L : Language Sigma), L_empty * L = L_empty := by
   intro L
   unfold L_empty
@@ -712,6 +715,7 @@ theorem empty_mul : ∀ (L : Language Sigma), L_empty * L = L_empty := by
   rcases h with ⟨u, u_mem, v, v_mem, h⟩
   contradiction
 
+/-- The empty language ∅ is an annihilating element for concatenation. (right) -/
 theorem mul_empty : ∀ (L : Language Sigma), L * L_empty = L_empty := by
   intro L
   unfold L_empty
@@ -722,7 +726,7 @@ theorem mul_empty : ∀ (L : Language Sigma), L * L_empty = L_empty := by
   rcases h with ⟨u, u_mem, v, v_mem, h⟩
   contradiction
 
--- All powers of ∅ (except ∅⁰) are ∅.
+/-- All powers of ∅ (except ∅⁰) are ∅. -/
 theorem succ_pow_empty : ∀ n, n > 0 → Language.pow L_empty n = @L_empty Sigma := by
   intro n n₁
   unfold Language.pow
@@ -735,6 +739,7 @@ theorem succ_pow_empty : ∀ n, n > 0 → Language.pow L_empty n = @L_empty Sigm
     simp
     apply empty_mul
 
+/-- The kleene closure of a language is the same as applying the plus operator and adding the empty word. -/
 theorem kstar_eq_plus_union_eps (L : Language Sigma) : L* = L⁺ ∪ L_eps := by
   apply Set.ext
   intro w
@@ -757,7 +762,7 @@ theorem kstar_eq_plus_union_eps (L : Language Sigma) : L* = L⁺ ∪ L_eps := by
     . exists n
     . exists 0
 
-
+/-- Removing the empty word from a language L does not change L*. -/
 theorem kstar_eq_L_minus_eps (L : Language Sigma) : L* = (L\L_eps)* := by
   apply Set.ext
   intro w
