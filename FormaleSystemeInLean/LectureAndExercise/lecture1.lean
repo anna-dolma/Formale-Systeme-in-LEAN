@@ -2,7 +2,7 @@ import FormaleSystemeInLean.LectureAndExercise.List
 import FormaleSystemeInLean.LectureAndExercise.Powertype
 set_option linter.unusedSectionVars false
 
-/-
+/-!
 Formalisation of lecture 1:
 This file covers the definition of words and languages as well as
 operations on words and languages and theorems about rules applying to these operations.
@@ -10,7 +10,7 @@ The slides are available at https://iccl.inf.tu-dresden.de/web/Formale_Systeme_(
 -/
 
 
-/-
+/-!
 On slide 28 an alphabet is defined as a nonempty finite set of symbols.
 In lean it is more convenient to just use a type here instead of a set.
 The elements of Sigma could be anything: unicode characters, numbers, strings...
@@ -39,44 +39,31 @@ theorem Word.mul_assoc (u v w : Word Sigma) : (u * v) * w = u * (v * w) := by
 def some_word : Word Char := ['S','t','a','u','b','e','c','k','e','n']
 def another_word : Word Char := ['A','l','t','b','a','u','c','h','a','r','m','e']
 
--- ignore this for now
-instance : Decidable (['t', 'a', 'u', 'b'] <:+: some_word) := by
-  unfold some_word
-  simp only [List.IsInfix]
-  have aux : (∃ s t, s ++ ['t', 'a', 'u', 'b'] ++ t = ['S', 't', 'a', 'u', 'b', 'e', 'c', 'k', 'e', 'n'])
-    ↔ ['S'] ++ ['t', 'a', 'u', 'b'] ++ ['e','c','k','e','n'] = ['S', 't', 'a', 'u', 'b', 'e', 'c', 'k', 'e', 'n'] := by
-      constructor
-      . intro h
-        rfl
-      . intro h
-        exists ['S'], ['e', 'c', 'k', 'e', 'n']
-  rw [aux]
-  apply isTrue
-  rfl
-
-instance (w v : Word Char) : Decidable (w.IsInfix v) := by
-  unfold List.IsInfix
-  sorry
-
 -- Lean's built-in list type already offers predicates for prefix, infix and suffix as defined in the lecture (slide 30):
 #eval List.IsPrefix ['S','t','a','u','b'] some_word
 #eval List.IsInfix ['t','a','u','b'] some_word
 #eval List.IsSuffix ['e','c','k','e','n'] some_word
 
--- For every alphabet Sigma, there is an empty word ε. Since we defined words as Lists
--- with elements of type Sigma, ε is just the empty list [].
--- ε is the identity element for concatenation of words:
+/-!
+For every alphabet Sigma, there is an empty word ε. Since we defined words as Lists
+with elements of type Sigma, ε is just the empty list [].
+ε is the identity element for concatenation of words:
+-/
 
--- Example from slide 30 (follows from list lemmas)
+/--
+Example from slide 30 (follows from list lemmas)
+-/
 theorem epsilon_prefix_infix_suffix (w : Word Sigma) : [].IsPrefix w ∧ [].IsInfix w ∧ [].IsSuffix w := by
   simp only [List.nil_prefix, List.nil_infix, List.nil_suffix, and_self]
 
--- Auxiliary result for the actual theorem
+/--
+Auxiliary result for the actual theorem
+-/
 theorem append_nil : ∀ (L : List α), L.append [] = L := by
   intro L
   simp only [List.append_eq, List.append_nil]
 
--- w * ε = w
+/-- w * ε = w -/
 theorem epsilon_concat : ∀ (w : Word Sigma), w * [] = w := by
   intro w
   cases w with
@@ -85,7 +72,7 @@ theorem epsilon_concat : ∀ (w : Word Sigma), w * [] = w := by
   | cons σ u =>
     apply append_nil
 
--- ε * w = w
+/-- ε * w = w -/
 theorem concat_epsilon : ∀ (w : Word Sigma), [] * w = w := by
   intro w
   cases w with
@@ -94,39 +81,40 @@ theorem concat_epsilon : ∀ (w : Word Sigma), [] * w = w := by
   | cons σ u =>
     trivial
 
--- A language is just a set of words.
+/-- A language is just a set of words. -/
 abbrev Language (Sigma : Type u) := Set (Word Sigma)
 
--- The "biggest language" Σ* contains all words over Σ
+/-- The "biggest language" Σ* contains all words over Σ -/
 def sigma_star : Language Sigma := fun _ => True
--- The empty language contains no words
+/-- The empty language contains no words -/
 def L_empty : Language Sigma := fun _ => False
--- The language containing only ε is not empty
+/-- The language containing only ε is not empty -/
 def L_eps : Language Sigma := fun w => w = []
 
--- Every language over Σ is a subset of Σ*
+/-- Every language over Σ is a subset of Σ* -/
 theorem sigma_star_subset : ∀ (L : Language Sigma), L ⊆ sigma_star := by
   intro L
   unfold sigma_star
   intro w w_mem
   simp only [Membership.mem]
 
--- The empty language is a subset of any language.
+/-- The empty language is a subset of any language. -/
 theorem L_eps_subset : ∀ (L : Language Sigma), L_empty ⊆ L := by
   intro L
   unfold L_empty
   intro w w_mem
   simp only [Membership.mem] at w_mem
 
+/-- A word w is contained in the language {ε} iff w = ε.-/
 theorem L_eps_mem : w ∈ (@L_eps Sigma) ↔ w = [] := by
   unfold L_eps
   simp only [Membership.mem]
 
--- Concatenation of Languages
+/-- Concatenation of Languages -/
 instance : Mul (Language Sigma) where
   mul L1 L2 := fun w => ∃ u ∈ L1, ∃ v ∈ L2, w = u * v
 
--- Concatenation of languages is associative:
+/-- Concatenation of languages is associative: -/
 theorem Language.mul_assoc (L₁ L₂ L₃ : Language Sigma) : (L₁ * L₂) * L₃ = L₁ * (L₂ * L₃) := by
   apply Set.ext
   intro w
@@ -162,11 +150,15 @@ theorem Language.mul_assoc (L₁ L₂ L₃ : Language Sigma) : (L₁ * L₂) * L
         rw [Word.mul_assoc]
         exact w_eq
 
--- Complement
+/--
+Defining the complement of a set only makes sense if we know the "universe" of all elements.
+For languages this is the set of all words over the alphabet Sigma, sigma_star.
+So we can define the complement of a language as follows:
+ -/
 def Language.complement (L : Language Sigma) : Language Sigma :=
   sigma_star \ L
 
--- The difference between two languages can be expressed with intersection and complement.
+/-- The difference between two languages can be expressed with intersection and complement. -/
 theorem diff_via_inter (L₁ L₂ : Language Sigma) : L₁ \ L₂ = L₁ ∩ L₂.complement := by
   apply Set.ext
   intro w
@@ -187,7 +179,7 @@ theorem diff_via_inter (L₁ L₂ : Language Sigma) : L₁ \ L₂ = L₁ ∩ L�
     . rcases w_2 with ⟨ws, nw⟩
       exact nw
 
--- For languages we can also execute concatenation multiple times and define this via Powers.
+/-- For languages we can also execute concatenation multiple times and define this via Powers. -/
 def Language.pow (L : Language Sigma) : Nat -> Language Sigma
 | .zero => fun w => w = []
 | .succ n => L * L.pow n
@@ -195,11 +187,11 @@ def Language.pow (L : Language Sigma) : Nat -> Language Sigma
 instance : NatPow (Language Sigma) where
   pow L n := L.pow n
 
--- Finally we define the Kleene Star and notation for it.
+/-- Finally we define the Kleene Star and notation for it. -/
 def Language.kstar (L : Language Sigma) : Language Sigma := fun w => ∃ n, w ∈ L^n
 postfix:max "*" => Language.kstar
 
--- Definition of the "⁺" operator which is basically the Kleene Star without n=0.
+/-- Definition of the "⁺" operator which is basically the Kleene Star without n=0. -/
 def Language.plus (L : Language Sigma) : Language Sigma := fun w => ∃ n > 0, w ∈ L^n
 postfix:max "⁺" => Language.plus
 
@@ -210,7 +202,7 @@ theorem language_inter (L₁ L₂ : Language Sigma) : L₁ ∩ L₂ = L₂ ∩ L
 
 -- for the remaining three identities refer to Set.lean.
 
--- We can also prove De Morgan's laws for set complements
+/-- We can also prove De Morgan's laws for set complements -/
 theorem de_morgan_rule1 (L₁ L₂ : Language Sigma) : (L₁ ∪ L₂).complement = L₁.complement ∩ L₂.complement := by
   apply Set.ext
   intro w
@@ -246,7 +238,7 @@ theorem de_morgan_rule1 (L₁ L₂ : Language Sigma) : (L₁ ∪ L₂).complemen
       | inr w_mem2 =>
         contradiction
 
--- note that this theorem requires classical logic.
+/-- note that this theorem requires classical logic. -/
 theorem de_morgan_rule2 (L₁ L₂ : Language Sigma) : (L₁ ∩ L₂).complement = L₁.complement ∪ L₂.complement := by
   apply Set.ext
   intro w
@@ -283,6 +275,7 @@ theorem de_morgan_rule2 (L₁ L₂ : Language Sigma) : (L₁ ∩ L₂).complemen
         rcases f with ⟨l, r⟩
         contradiction
 
+/-- We can also prove (again, using classical logic) that the complement of the complement of a language L is again L. -/
 theorem double_complement (L : Language Sigma) : (L.complement).complement = L := by
   apply Set.ext
   intro w
@@ -308,7 +301,7 @@ theorem double_complement (L : Language Sigma) : (L.complement).complement = L :
       rcases f with ⟨w_mem_s, w_nmem⟩
       contradiction
 
--- This theorem will come in handy for many proofs. Although it might seem trivial, it does not immediately follow from the definition.
+/-- This theorem will come in handy for many proofs. Although it might seem trivial, it does not immediately follow from the definition. -/
 theorem pow_as_concat (L : Language Sigma) : n > 0 → L^n = L * L^(n-1) := by
   intro gt
   apply Set.ext
@@ -331,9 +324,13 @@ theorem pow_as_concat (L : Language Sigma) : n > 0 → L^n = L * L^(n-1) := by
       . exact p_mem
       . exists q
 
--- In some cases, it makes sense to think about the kleene star of some language L as the language
--- containing words consisting of a list of words from L. We can prove that this is equivalent to our original definition:
-theorem Language.mem_kstar (L : Language Sigma) (w : Word Sigma) : w ∈ L* ↔ ∃ l : (List (Word Sigma)), w = l.flatten ∧ (∀ u ∈ l, u ∈ L) := by
+/--
+In some cases, it makes sense to think about the kleene star of some language L as the language
+containing words consisting of a list of words from L. We can prove that this is equivalent to our original definition.
+-/
+
+-- obsolete
+theorem Language.mem_kstar' (L : Language Sigma) (w : Word Sigma) : w ∈ L* ↔ ∃ l : (List (Word Sigma)), w = l.flatten ∧ (∀ u ∈ l, u ∈ L) := by
     constructor
     . intro w_mem
       unfold Language.kstar at w_mem
@@ -377,11 +374,9 @@ theorem Language.mem_kstar (L : Language Sigma) (w : Word Sigma) : w ∈ L* ↔ 
         . exact v_mem
         . exists l'.flatten
 
-def test : List (List (Word Char)) := [[['a','b'],['a']],[['b'],['a','b']]]
-#eval test.foldl ( · ++ · ) []
-#eval test.flatten
-
--- TO DO: kann man das mit mem_kstar beweisen? (bzw umgekehrt)
+/--
+We first show a more general result:
+-/
 theorem Language.mem_pow (L : Language Sigma) (w : Word Sigma) : w ∈ L^n ↔ ∃ l : (List (Word Sigma)), w = l.flatten ∧ l.length = n ∧ (∀ u ∈ l, u ∈ L) := by
   constructor
   intro w_mem
@@ -430,7 +425,26 @@ theorem Language.mem_pow (L : Language Sigma) (w : Word Sigma) : w ∈ L^n ↔ �
           . intro u u_mem'; apply u_mem; simp [u_mem']
         . exact w_eq
 
--- every power of a language L is a subset of L*.
+/--
+Since the kstar operation is defined via powers, we can now use the previous result and ignore the length of the list:
+If a word is in L* then it must be in some power of L. Then we can obtain the list from Language.mem_pow.
+For the other direction (when we have a list of words from L and want to show that the flattened list is contained in L*),
+we use the list's length as the exponent n required for membership in L* and then apply mem_pow again.
+ -/
+theorem Language.mem_kstar (L : Language Sigma) (w : Word Sigma) : w ∈ L* ↔ ∃ l : (List (Word Sigma)), w = l.flatten ∧ (∀ u ∈ l, u ∈ L) := by
+    constructor
+    . intro w_mem
+      rcases w_mem with ⟨n, w_mem⟩
+      rw [Language.mem_pow] at w_mem
+      rcases w_mem with ⟨l, w_eq, _, u_mem⟩
+      exists l
+    . intro hw
+      rcases hw with ⟨l, w_eq, u_mem⟩
+      exists l.length
+      rw [Language.mem_pow]
+      exists l
+
+/-- every power of a language L is a subset of L*. -/
 theorem kstar_subset (L : Language Sigma) : ∀ (n : Nat), L^n ⊆ L* := by
   intro n w w_mem
   cases n with
@@ -439,7 +453,7 @@ theorem kstar_subset (L : Language Sigma) : ∀ (n : Nat), L^n ⊆ L* := by
   | succ n =>
     exists n+1
 
--- Another example for something seemingly obvious that needs to be proven explicitly in order to be used in theorems.
+/-- Another example for something seemingly obvious that needs to be proven explicitly in order to be used in theorems. -/
 theorem first_power (L : Language Sigma) : L^1 = L := by
     apply Set.ext
     intro w
@@ -464,7 +478,7 @@ theorem first_power (L : Language Sigma) : L^1 = L := by
 
 theorem mul_eq_append (u v : Word Sigma) : u * v = u++v := by rfl
 
--- Product rule for exponents: when concatenating powers of a language we can add the exponents as we do when multiplying numbers.
+/-- Product rule for exponents: when concatenating powers of a language we can add the exponents as we do when multiplying numbers. -/
 theorem add_exp [BEq Sigma] (L : Language Sigma) (m n : Nat) : (L^n) * L^m = L^(n+m) := by
   apply Set.ext
   intro w

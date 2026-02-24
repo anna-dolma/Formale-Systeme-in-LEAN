@@ -2,11 +2,31 @@ import FormaleSystemeInLean.LectureAndExercise.lecture1
 
 set_option linter.unusedSectionVars false
 
+/-!
+Formalisation of Lecture 3:
+Covers the definition of DFAs and total DFAs, the corresponding languages and how to obtain a total DFA from
+a non-total DFA.
+Grammars are (for now) not part of this formalisation, so in lecture 3 and 4 all things related to grammars and the
+Chomsky Hierarchy is left out.
+-/
+
+/--
+We define a DFA as a generic structure with two type parameters Q and Sigma. Definitions in the lecture and textbooks usually
+define Q and Sigma as finite sets. We already know from lecture 1 that it is sufficient to define Sigma as an arbitrary type.
+The states however need to be finite, otherwise it would not be a finite automaton. Therefore we require an instance of Fintype for Q.
+For further information on Fintype please refer to the corresponding file.
+
+δ is a function mapping a state of type Q and a symbol of type Sigma to something of type Option Q.
+This is how we "encode" that δ is a partial function: if δ(q,a) = None, it is undefined.
+-/
 structure DFA (Q : Type u) (Sigma : Type v) [Fintype Q] [Fintype Sigma] where
   δ: Q -> Sigma → Option Q
   q0 : Q
   F : List Q
 
+/--
+A total DFA is defined like a DFA except for the transition function δ.
+-/
 structure TotalDFA (Q : Type u) (Sigma : Type v) [Fintype Q] [Fintype Sigma] where
   δ: Q → Sigma → Q
   q0: Q
@@ -14,6 +34,9 @@ structure TotalDFA (Q : Type u) (Sigma : Type v) [Fintype Q] [Fintype Sigma] whe
 
 variable {Q : Type u} {Sigma : Type v} [Fintype Q] [Fintype Sigma]
 
+/--
+
+-/
 def DFA.δ_word (dfa : DFA Q Sigma) (q : Q) : (Word Sigma) -> Option Q
 | .nil => .some q
 | .cons a v => (dfa.δ q a).bind (fun q' => dfa.δ_word q' v)
@@ -25,6 +48,9 @@ def TotalDFA.δ_word (t_dfa : TotalDFA Q Sigma) (q : Q) : (Word Sigma) → Q
 def TotalDFA.Language (t_dfa : TotalDFA Q Sigma) : Language Sigma :=
   fun w => t_dfa.δ_word t_dfa.q0 w ∈ t_dfa.F
 
+/--
+Given a DFA, a word w is contained in its language iff δ_word(q0,w) is defined and the DFA ends up in a final state when reading w.
+-/
 def DFA.Language (dfa : DFA Q Sigma) : Language Sigma :=
   fun w => ∃ qf, dfa.δ_word dfa.q0 w = some qf ∧ qf ∈ dfa.F
 
