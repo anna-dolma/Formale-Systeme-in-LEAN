@@ -1,4 +1,7 @@
 
+/--
+Removing all occurrences of [[]] from a list before applying flatten does not change the result of flatten.
+-/
 theorem List.removeAll_nil_flatten [BEq α] : ∀ (l : List (List α)), (l.removeAll [[]]).flatten = l.flatten := by
   intro l
   induction l with
@@ -17,8 +20,9 @@ theorem List.removeAll_nil_flatten [BEq α] : ∀ (l : List (List α)), (l.remov
       have a_eq : ¬(a = []) := by simp_all
       rw [List.flatten_cons, ih]
       rfl
+
 /--
-Eliminates duplicates from a list, keeping the rightmost occurrence. (Implementation copied from...)
+Eliminates duplicates from a list, keeping the rightmost occurrence. (Implementation copied from https://github.com/monsterkrampe/Basic-Lean-Datastructures/blob/main/BasicLeanDatastructures/List/EraseDupsKeepRight.lean)
 -/
 def List.removeDups [DecidableEq α] : List α -> List α
   | [] => []
@@ -71,6 +75,7 @@ theorem List.isInfixOf_cons [DecidableEq α] (k l : List α) (a : α) : k.isInfi
 
   sorry
 
+-- TO DO
 theorem List.isInfixOf_iff_Infix [DecidableEq α] (k l : List α) : k.isInfixOf l ↔ k <:+: l := by
   induction l generalizing k with
   | nil =>

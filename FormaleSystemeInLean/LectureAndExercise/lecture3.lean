@@ -8,6 +8,8 @@ Covers the definition of DFAs and total DFAs, the corresponding languages and ho
 a non-total DFA.
 Grammars are (for now) not part of this formalisation, so in lecture 3 and 4 all things related to grammars and the
 Chomsky Hierarchy is left out.
+
+Slides for lecture 3 can be found at https://iccl.inf.tu-dresden.de/w/images/e/e2/FS2025-Vorlesung-03-print.pdf
 -/
 
 /--
@@ -19,6 +21,7 @@ For further information on Fintype please refer to the corresponding file.
 δ is a function mapping a state of type Q and a symbol of type Sigma to something of type Option Q.
 This is how we "encode" that δ is a partial function: if δ(q,a) = None, it is undefined.
 -/
+
 structure DFA (Q : Type u) (Sigma : Type v) [Fintype Q] [Fintype Sigma] where
   δ: Q -> Sigma → Option Q
   q0 : Q

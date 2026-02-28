@@ -24,17 +24,21 @@ instance : HasSSubset (Set α) where
 instance : SDiff (Set α) where
   sdiff A B := fun e => e ∈ A ∧ ¬(e ∈ B)
 
-def Set.powerset (α : Type u) (S : Set α) := fun x => x ⊆ S
+def List.toSet (l : List α) : Set α := fun e => e ∈ l
 
-def Set.map (f : α → β) (S : Set α) [Fintype α] : Set β :=
+namespace Set
+
+def powerset (α : Type u) (S : Set α) := fun x => x ⊆ S
+
+def map (f : α → β) (S : Set α) [Fintype α] : Set β :=
   fun b => ∃ (a : α), a ∈ S ∧ f a = b
 
 -- Set extensionality: Two sets are equal if they contain the same elements. This is not something we define but we can prove it!
-theorem Set.ext (X Y : Set α) : (∀ e, e ∈ X ↔ e ∈ Y) -> X = Y := by
+theorem ext (X Y : Set α) : (∀ e, e ∈ X ↔ e ∈ Y) -> X = Y := by
   intro h; apply funext; intro e; apply propext; specialize h e; exact h
 
 
-theorem Set.inter_commutative (X Y : Set α) : X ∩ Y = Y ∩ X := by
+theorem inter_commutative (X Y : Set α) : X ∩ Y = Y ∩ X := by
   apply Set.ext
   intro e
   constructor
@@ -51,7 +55,7 @@ theorem Set.inter_commutative (X Y : Set α) : X ∩ Y = Y ∩ X := by
     . rcases e_mem with ⟨e_x, e_y⟩
       exact e_x
 
-theorem Set.union_commutative (X Y : Set α) : X ∪ Y = Y ∪ X := by
+theorem union_commutative (X Y : Set α) : X ∪ Y = Y ∪ X := by
   apply Set.ext
   intro e
   constructor
@@ -135,7 +139,7 @@ theorem distr_union_inter (X Y Z : Set α) : X ∪ (Y ∩ Z) = (X ∪ Y) ∩ (X 
         . contradiction
         . exact inr
 
-theorem Set.not_empty_contains_element (X : Set α) : X ≠ ∅ -> ∃ e, e ∈ X := by
+theorem not_empty_contains_element (X : Set α) : X ≠ ∅ -> ∃ e, e ∈ X := by
   intro neq
   apply Classical.byContradiction
   intro contra
@@ -147,7 +151,7 @@ theorem Set.not_empty_contains_element (X : Set α) : X ≠ ∅ -> ∃ e, e ∈ 
   simp only [contra, false_iff]
   simp [Membership.mem, EmptyCollection.emptyCollection]
 
-theorem Set.empty_eq (A : Set α) : (∀ (x : α), ¬x ∈ A) -> A = ∅ := by
+theorem empty_eq (A : Set α) : (∀ (x : α), ¬x ∈ A) -> A = ∅ := by
   intro h
   apply Set.ext
   intro a
@@ -160,7 +164,7 @@ theorem Set.empty_eq (A : Set α) : (∀ (x : α), ¬x ∈ A) -> A = ∅ := by
   . intro e_mem
     simp only [Membership.mem] at e_mem
 
-theorem Set.empty_iff (A : Set α) : A = ∅ ↔ ∀ a, a ∉ A := by
+theorem empty_iff (A : Set α) : A = ∅ ↔ ∀ a, a ∉ A := by
   constructor
   . intro A_eq
     simp only [EmptyCollection.emptyCollection] at *
@@ -178,6 +182,16 @@ theorem Set.empty_iff (A : Set α) : A = ∅ ↔ ∀ a, a ∉ A := by
       exact e_mem
     . intro e_mem
       simp only [Membership.mem] at e_mem
+
+-- "not_empty_contains_element" but for boolean inequality
+theorem ne_empty_contains_element (B : Set α) [DecidableEq (Set α)] : B != ∅ -> ∃ a, a ∈ B := by
+  intro neq
+  apply Classical.byContradiction
+  intro contra
+  rw [not_exists] at contra
+  have aux := Set.empty_eq B contra
+  rw [aux] at neq
+  simp only [bne_self_eq_false, Bool.false_eq_true] at neq
 
 theorem empty_set_if_empty_type (T : Fintype α) (S : Set α) : T.elems = [] → S = ∅ := by
   intro h
@@ -208,8 +222,6 @@ constructor
   . intro x_mem
     grind
 
-def List.toSet (l : List α) : Set α := fun e => e ∈ l
-
 theorem complete_set_eq_fintype_elems (T : Fintype α) : T.elems.toSet = fun _ => True := by
   apply Set.ext
   intro x
@@ -231,17 +243,21 @@ theorem exists_not_mem_if_ne_complete_set (T : Fintype α) (S : Set α) : (S ≠
   have S_eq := aux.mpr contra
   contradiction
 
-  theorem ssubset_of_complete_set (T : Fintype α) (S : Set α) : (S ≠ fun _ => True) → S ⊂ (fun _ => True) := by
-  intro ne
-  constructor
-  . intro a a_mem
-    trivial
-  . intro h
-    have aux := exists_not_mem_if_ne_complete_set T S ne
-    rcases aux with ⟨x, x_nmem⟩
-    let complete_set : Set α := (fun a => True)
-    have x_mem : x ∈ complete_set := by
-      unfold complete_set
-      simp only [Membership.mem]
-    have x_mem_S : x ∈ S := h x x_mem
-    contradiction
+theorem ssubset_of_complete_set (T : Fintype α) (S : Set α) : (S ≠ fun _ => True) → S ⊂ (fun _ => True) := by
+intro ne
+constructor
+. intro a a_mem
+  trivial
+. intro h
+  have aux := exists_not_mem_if_ne_complete_set T S ne
+  rcases aux with ⟨x, x_nmem⟩
+  let complete_set : Set α := (fun a => True)
+  have x_mem : x ∈ complete_set := by
+    unfold complete_set
+    simp only [Membership.mem]
+  have x_mem_S : x ∈ S := h x x_mem
+  contradiction
+
+theorem mem_iff : ∀ {α} {S : Set α} x, x ∈ S ↔ S x := by simp [Membership.mem]
+
+end Set

@@ -5,6 +5,11 @@ set_option linter.unusedSectionVars false
 variable {Sigma : Type u} [DecidableEq Sigma]
 
 section Exercise1
+  /-!
+  This file covers exercises 1 and 2 from exercise sheet 1 (which can be found at https://iccl.inf.tu-dresden.de/w/images/a/a1/FS2025-Blatt-01.pdf).
+  The goal of these exercises is to show some general theorems about formal languages as well as some theorems about particular languages.
+  Definitions and results used in the proofs can be found in lecture1.
+  -/
 
   variable {L1 L2 L3 L4 : Language Sigma}
 
@@ -556,8 +561,9 @@ theorem ex_2e (L₁ L₂ : Language Sigma) : (L₁* ∪ L₂*)* = (L₁ ∪ L₂
             rw [Language.mem_kstar]
             exists head
         . exists tail.flatten.flatten
-
+  -- Now we can prove the actual theorem:
   constructor
+  -- (L₁* ∪ L₂*)* ⊆ (L₁ ∪ L₂)*
   . intro w_mem
     specialize aux w
     rw [aux] at w_mem
@@ -575,6 +581,7 @@ theorem ex_2e (L₁ L₂ : Language Sigma) : (L₁* ∪ L₂*)* = (L₁ ∪ L₂
         apply Or.inl; exact inl
       . specialize inr x x_mem
         apply Or.inr; exact inr
+  -- (L₁ ∪ L₂)* ⊆ (L₁* ∪ L₂*)*
   . intro w_mem
     have L1_subset : L₁ ⊆ L₁* := by
         intro y y_mem

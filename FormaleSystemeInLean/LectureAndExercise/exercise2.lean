@@ -1,6 +1,11 @@
 import FormaleSystemeInLean.LectureAndExercise.lecture4
 import FormaleSystemeInLean.LectureAndExercise.FintypeSetDecidableEq
 
+
+/-!
+This file contains the formalisation of exercise 2.3 c and d which deals with simulations between NFAs.
+The exercise sheet is available at https://iccl.inf.tu-dresden.de/w/images/2/28/FS2025-Blatt-02.pdf.
+-/
 section Exercise3
 
   variable {Sigma : Type u} {Q1 : Type u1} {Q2 : Type u2} [Fintype Q1] [Fintype Q2] [Fintype Sigma]
@@ -13,6 +18,9 @@ section Exercise3
 
   section d
 
+    /--
+    If there is a simulation between nfa1 and nfa2 then the language of nfa1 is a subset of the language of nfa2.
+    -/
     theorem part_a {nfa1 : NFA Q1 Sigma} {nfa2 : NFA Q2 Sigma} (sim : NFASimulation nfa1 nfa2) : nfa1.Language ⊆ nfa2.Language := by
       have generalized_theorem : ∀ {q1 q1' : Q1} {q2 : Q2} {w : Word Sigma}, (q1, q2) ∈ sim.rel -> ∀ r1 : nfa1.Run q1 q1' w, ∃ q2' : Q2, (q1', q2') ∈ sim.rel ∧ ∃ r2 : nfa2.Run q2 q2' w, True := by
         intro q1 q1' q2 w q1_eq_q2 r1
@@ -37,6 +45,15 @@ section Exercise3
       . exact r2_start
       . exact sim.final qf1_eq_qf2 r1_accept
 
+
+    /-!
+    How about the other direction - does language inclusion also imply a simulation between the NFAs recognising the languages?
+    We can show that this is not true by giving a counterexample.
+
+    In order to define NFAs we first need Fintypes for Q and Sigma. We cannot just use strings because there are infinitely many of those.
+    Instead we use a subtype of String defined by a list of strings (statesList and sigma).
+    -/
+
     def statesList := ["q0", "q1", "q2"]
     def sigma := ['a', 'b']
 
@@ -50,12 +67,11 @@ section Exercise3
     instance : Inter (Powertype Q) where
       inter A B := fun e => e ∈ A ∧ e ∈ B
 
-    def states_power := statesList.power_upto 3
-    #eval states_power.removeDups
-
-
     variable {h : ∀ (S : Set Q), DecidablePred S}
 
+    /--
+    Finally we can define the NFA 𝓜.
+    -/
     def 𝓜 : NFA Q ⅀ where
       δ := fun q σ =>
         match q.val with
@@ -70,10 +86,16 @@ section Exercise3
       Q0 := [⟨"q0", by simp only [statesList]; grind⟩]
       F := [⟨"q2", by simp only [statesList]; grind⟩]
 
+    /-!
+    For our counterexample we will use 𝓜 and its powerset DFA 𝓜'. Their languages are equal but there is not simulation between 𝓜 and 𝓜'.
+    Simulations are defined for NFAs so we convert 𝓜' back into an NFA 𝓜''.
+    -/
+
+
     def 𝓜' : TotalDFA (Powertype Q) ⅀ := 𝓜.to_TotalDFA
     def 𝓜'' : NFA (Powertype Q) ⅀ := 𝓜'.to_NFA
 
-    theorem part_b : ∃ (nfa1 : NFA (Powertype Q) ⅀) (nfa2 : NFA Q ⅀), nfa1.Language ⊆ nfa2.Language ∧ ¬∃ (sim : NFASimulation nfa1 nfa2), True := by
+    theorem part_b : ∃ (nfa1 : NFA (Powertype Q) ⅀) (nfa2 : NFA Q ⅀), nfa1.Language ⊆ nfa2.Language ∧ ¬∃ (_ : NFASimulation nfa1 nfa2), True := by
       exists 𝓜'', 𝓜
       constructor
       . intro w w_mem

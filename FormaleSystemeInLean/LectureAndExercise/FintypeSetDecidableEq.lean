@@ -1,8 +1,11 @@
 import FormaleSystemeInLean.LectureAndExercise.Powertype
 
--- to do: warum brauchen wir diese instanz -> kurzen text dazu verfassen
---
+/-!
+Given a type α with decidable equality and a Fintype instance T (which means that there are only finitely many αs),
+we can prove that equality is also decidable for Set α. A typeclass instance for this is needed for the powerset construction in lecture 4.
+-/
 
+/-- Two lists with the same elements (ignoring order and duplicates) map to the same set via List.toSet. -/
 theorem toSet_eq_iff_lists_have_same_members (X Y : Set α) (l k : List α) : l.toSet = X → k.toSet = Y → ((∀ a, a ∈ l ↔ a ∈ k) ↔ X = Y) := by
   intro X_eq Y_eq
   unfold List.toSet at *
@@ -28,6 +31,10 @@ theorem toSet_eq_iff_lists_have_same_members (X Y : Set α) (l k : List α) : l.
     rw [← X_eq, ← Y_eq] at xy_eq
     grind
 
+/--
+If α is a finite type and membership is decidable for every Set α then two sets X and Y are equal iff their corresponding lists have the same members.
+We need to assume (DecidablePred S) for every (S : Set α) in order to obtain a list with the same elements as S by filtering Fintype.elems for members of S.
+-/
 theorem set_eq_iff_filter_has_same_members (α : Type u) (h : ∀ (S : Set α), DecidablePred S) (T : Fintype α) (X Y : Set α) : X = Y ↔ (∀ a, a ∈ T.elems.filter ( · ∈ X) ↔ a ∈ T.elems.filter ( · ∈ Y)) := by
   constructor
   . intro xy_eq
@@ -42,6 +49,10 @@ theorem set_eq_iff_filter_has_same_members (α : Type u) (h : ∀ (S : Set α), 
     have x_mem_elems := T.complete x
     apply h x x_mem_elems
 
+/--
+If α is a finite type and membership is decidable for every Set α then two sets X and Y are equal iff their corresponding lists are equal.
+We need to assume (DecidablePred S) for every (S : Set α) in order to obtain a list with the same elements as S by filtering Fintype.elems for members of S.
+-/
 theorem set_eq_iff_filter_eq (α : Type u) (h : ∀ (S : Set α), DecidablePred S) (T : Fintype α) (X Y : Set α) : X = Y ↔ T.elems.filter ( · ∈ X) = T.elems.filter ( · ∈ Y) := by
   constructor
   . intro eq
