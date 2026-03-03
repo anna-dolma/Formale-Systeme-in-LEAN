@@ -1,4 +1,4 @@
-import FormaleSystemeInLean.LectureAndExercise.lecture1
+import FormaleSystemeInLean.WS2526.Lecture1
 
 set_option linter.unusedSectionVars false
 
@@ -87,6 +87,11 @@ def List.powerset_lists [BEq α] (l : List α) : List (List α) :=
 
 structure DFA (Q : Type u) (Sigma : Type v) [Fintype Q] where
   𝓠 : Set Q
+  δ : Q → Sigma → Option Q
+  q0 : Q
+  F : Set Q
+
+structure DFA' (Q : Type u) (Sigma : Type v) [Fintype Q] where
   δ : Q → Sigma → Option Q
   q0 : Q
   F : Set Q

@@ -1,4 +1,4 @@
-import FormaleSystemeInLean.LectureAndExercise.lecture1
+import FormaleSystemeInLean.WS2526.Lecture1
 
 
 def lhs (V : Type v) (Sigma : Type V) := { w : Word (V ⊕ Sigma) // ∃ z, z ∈ w ∧ z.isLeft}

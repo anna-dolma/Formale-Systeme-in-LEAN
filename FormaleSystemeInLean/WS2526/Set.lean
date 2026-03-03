@@ -1,4 +1,4 @@
-import FormaleSystemeInLean.LectureAndExercise.Fintype
+import FormaleSystemeInLean.WS2526.Fintype
 
 def Set (α : Type u) := α -> Prop
 

@@ -1,4 +1,4 @@
-import FormaleSystemeInLean.LectureAndExercise.lecture1
+import FormaleSystemeInLean.WS2526.Lecture1
 
 set_option linter.unusedSectionVars false
 
@@ -146,7 +146,7 @@ theorem to_totalDFA_δ_word_eq (M : DFA Q Sigma) (q : Q) (w : Word Sigma) : M.δ
       | nil =>
         simp
       | cons a' v' =>
-        simp only [hv]
+        simp only
         rw [δ_none_eq_none]
         rw [garbage_state]
     | some q' =>

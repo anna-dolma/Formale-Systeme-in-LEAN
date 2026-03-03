@@ -1,4 +1,4 @@
-import FormaleSystemeInLean.LectureAndExercise.Powertype
+import FormaleSystemeInLean.WS2526.Powertype
 
 /-!
 Given a type α with decidable equality and a Fintype instance T (which means that there are only finitely many αs),

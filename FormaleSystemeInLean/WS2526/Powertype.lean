@@ -1,5 +1,4 @@
-import FormaleSystemeInLean.LectureAndExercise.Fintype
-import FormaleSystemeInLean.LectureAndExercise.Set
+import FormaleSystemeInLean.WS2526.Set
 
 set_option linter.unusedSectionVars false
 

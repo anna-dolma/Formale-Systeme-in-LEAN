@@ -1,5 +1,5 @@
-import FormaleSystemeInLean.LectureAndExercise.lecture4
-import FormaleSystemeInLean.LectureAndExercise.FintypeSetDecidableEq
+import FormaleSystemeInLean.WS2526.Lecture4
+import FormaleSystemeInLean.WS2526.FintypeSetDecidableEq
 
 
 /-!

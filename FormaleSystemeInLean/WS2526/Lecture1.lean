@@ -1,5 +1,6 @@
-import FormaleSystemeInLean.LectureAndExercise.List
-import FormaleSystemeInLean.LectureAndExercise.Powertype
+import FormaleSystemeInLean.WS2526.List
+import FormaleSystemeInLean.WS2526.Powertype
+
 set_option linter.unusedSectionVars false
 
 /-!
@@ -19,17 +20,17 @@ we can decide wether they are equal or not. Otherwise it would be impossible to 
 -/
 variable {Sigma : Type u} [DecidableEq Sigma]
 
--- Words are merely lists over some alphabet Sigma.
+/-- Words are merely lists over some alphabet Sigma. -/
 abbrev Word (Sigma : Type u) := List Sigma
 
--- Let's define concatenation as multiplication.
+/-- Let's define concatenation as multiplication. -/
 instance : Mul (Word Sigma) where
   mul u v := List.append u v
 
 theorem Word.mul_eq (u v : Word Sigma) : u * v = u++v := by
   trivial
 
--- Concatenation of words is associative:
+/-- Concatenation of words is associative. -/
 theorem Word.mul_assoc (u v w : Word Sigma) : (u * v) * w = u * (v * w) := by
   simp only [mul_eq]; rw [List.append_assoc]
 
@@ -39,7 +40,7 @@ theorem Word.mul_assoc (u v w : Word Sigma) : (u * v) * w = u * (v * w) := by
 def some_word : Word Char := ['S','t','a','u','b','e','c','k','e','n']
 def another_word : Word Char := ['A','l','t','b','a','u','c','h','a','r','m','e']
 
--- Lean's built-in list type already offers predicates for prefix, infix and suffix as defined in the lecture (slide 30):
+/-! Lean's built-in list type already offers predicates for prefix, infix and suffix as defined in the lecture (slide 30) -/
 #eval List.IsPrefix ['S','t','a','u','b'] some_word
 #eval List.IsInfix ['t','a','u','b'] some_word
 #eval List.IsSuffix ['e','c','k','e','n'] some_word
@@ -50,15 +51,11 @@ with elements of type Sigma, ε is just the empty list [].
 ε is the identity element for concatenation of words:
 -/
 
-/--
-Example from slide 30 (follows from list lemmas)
--/
+/-- Example from slide 30 (follows from list lemmas) -/
 theorem epsilon_prefix_infix_suffix (w : Word Sigma) : [].IsPrefix w ∧ [].IsInfix w ∧ [].IsSuffix w := by
   simp only [List.nil_prefix, List.nil_infix, List.nil_suffix, and_self]
 
-/--
-Auxiliary result for the actual theorem
--/
+/-- Auxiliary result for epsilon_concat -/
 theorem append_nil : ∀ (L : List α), L.append [] = L := by
   intro L
   simp only [List.append_eq, List.append_nil]
@@ -195,14 +192,14 @@ postfix:max "*" => Language.kstar
 def Language.plus (L : Language Sigma) : Language Sigma := fun w => ∃ n > 0, w ∈ L^n
 postfix:max "⁺" => Language.plus
 
--- the first four equalities from slide 35 follow directly from set theory.
--- just as an example:
+/-! the first four equalities from slide 35 follow directly from set theory. Just as an example: -/
 theorem language_inter (L₁ L₂ : Language Sigma) : L₁ ∩ L₂ = L₂ ∩ L₁ := by
   simp only [Set.inter_commutative]
 
--- for the remaining three identities refer to Set.lean.
+/-! for the remaining three identities refer to Set.lean. -/
 
-/-- We can also prove De Morgan's laws for set complements -/
+/-! Using the complement of a language, we can also prove De Morgan's laws. -/
+
 theorem de_morgan_rule1 (L₁ L₂ : Language Sigma) : (L₁ ∪ L₂).complement = L₁.complement ∩ L₂.complement := by
   apply Set.ext
   intro w
@@ -275,7 +272,7 @@ theorem de_morgan_rule2 (L₁ L₂ : Language Sigma) : (L₁ ∩ L₂).complemen
         rcases f with ⟨l, r⟩
         contradiction
 
-/-- We can also prove (again, using classical logic) that the complement of the complement of a language L is again L. -/
+/-- We can also prove that the complement of the complement of a language L is again L (which also requires classical logic). -/
 theorem double_complement (L : Language Sigma) : (L.complement).complement = L := by
   apply Set.ext
   intro w
@@ -324,55 +321,10 @@ theorem pow_as_concat (L : Language Sigma) : n > 0 → L^n = L * L^(n-1) := by
       . exact p_mem
       . exists q
 
-/--!
+/-!
 In some cases, it makes sense to think about the kleene star of some language L as the language
 containing words consisting of a list of words from L. We can prove that this is equivalent to our original definition.
 -/
-
--- obsolete
-theorem Language.mem_kstar' (L : Language Sigma) (w : Word Sigma) : w ∈ L* ↔ ∃ l : (List (Word Sigma)), w = l.flatten ∧ (∀ u ∈ l, u ∈ L) := by
-    constructor
-    . intro w_mem
-      unfold Language.kstar at w_mem
-      rcases w_mem with ⟨n, w_mem⟩
-      induction n generalizing w with
-      | zero =>
-        exists []
-        simp only [List.flatten_nil]
-        constructor
-        . exact w_mem
-        . intro u u_mem
-          contradiction
-      | succ n ih =>
-        rcases w_mem with ⟨u, u_mem, v, v_mem, w_eq⟩
-        rcases ih v v_mem with ⟨l_w, v_eq, l_mem⟩
-        exists u::l_w
-        constructor
-        . rw [List.flatten_cons, ←v_eq]
-          exact w_eq
-        . intro x x_mem
-          rw [List.mem_cons] at x_mem
-          rcases x_mem
-          . subst x
-            exact u_mem
-          . apply l_mem
-            simp_all only
-    . intro h
-      rcases h with ⟨l, w_eq, l_mem⟩
-      induction l generalizing w with
-      | nil =>
-        exists 0
-      | cons v l' ih =>
-        simp only [List.mem_cons, forall_eq_or_imp] at l_mem
-        rcases l_mem with ⟨v_mem, l'_mem⟩
-        rw [w_eq]
-        have h_tail : l'.flatten ∈ L* := ih (l'.flatten) rfl l'_mem
-        rcases h_tail with ⟨n, h_tail⟩
-        exists n+1
-        exists v
-        constructor
-        . exact v_mem
-        . exists l'.flatten
 
 /--
 We first show a more general result: for any word from L^n, we can find a corresponding list of length n.
