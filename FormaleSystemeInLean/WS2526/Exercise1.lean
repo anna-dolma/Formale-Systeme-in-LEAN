@@ -127,6 +127,8 @@ section Exercise2
       rw [contra]
       exact mem
 
+  end a2
+
   theorem kstar_incl_left (L : Language Sigma) : L* * L ⊆ L* := by
       intro w w_mem
       rcases w_mem with ⟨u, u_mem, v, v_mem, w_eq⟩
@@ -138,22 +140,20 @@ section Exercise2
       . exact u_mem
       . exists v
 
-    theorem kstar_incl_right (L : Language Sigma) : L * L* ⊆ L* := by
-      intro w w_mem
-      rcases w_mem with ⟨u, u_mem, v, v_mem, w_eq⟩
-      rcases v_mem with ⟨n, v_mem⟩
-      exists 1+n
-      rw [← add_exp, first_power]
-      exists u
-      constructor
-      . exact u_mem
-      . exists v
-
-  end a2
+  theorem kstar_incl_right (L : Language Sigma) : L * L* ⊆ L* := by
+    intro w w_mem
+    rcases w_mem with ⟨u, u_mem, v, v_mem, w_eq⟩
+    rcases v_mem with ⟨n, v_mem⟩
+    exists 1+n
+    rw [← add_exp, first_power]
+    exists u
+    constructor
+    . exact u_mem
+    . exists v
 
   section b
 
-  /-
+  /-!
   In exercise sessions the solution given for 1.2b is usually somewhat informal.
   We just argue that every word from the languages on the left hand side and the right hand side
   starts and ends with an a and in between there can be arbitrary chains of a but never two bs in a row.
@@ -165,7 +165,7 @@ section Exercise2
     def L4 : Language Char := fun w => w ∈ L6 * L8*
     def L7 : Language Char := fun w => w ∈ L5* * L6
 
-    -- Auxiliary result for exercise 1.2b
+    /-- Auxiliary result for exercise 1.2b -/
     theorem aux2 : L5 * L6 = L6 * L8 := by
       apply Set.ext
       intro w
@@ -474,19 +474,20 @@ theorem ex_2d_1 : (@L_empty Sigma)* = L_eps := by
 
   end d
 
-theorem ex_2e (L₁ L₂ : Language Sigma) : (L₁* ∪ L₂*)* = (L₁ ∪ L₂)* := by
-  apply Set.ext
-  intro w
-
-  /-
+/-!
   in the exercise solution the inclusion (L₁* ∪ L₂*)* ⊆ (L₁ ∪ L₂)* is shown by arguing that every Word w from (L₁* ∪ L₂*)*
   can be seen as a concatenation of words w₁...wₙ where each wᵢ is from (L₁* ∪ L₂*).
   Then each wᵢ can again be expressed as a sequence of words x₁...xₙ where either each xᵢ is from L₁ or each xᵢ is from L₂.
   But then the original word w is a sequence of words from L₁ and L₂, so w ∈ (L₁ ∪ L₂)*.
   In Lean it is not quite as easy to switch between words and lists of words. A list of words cannot be equal to a word because the type does not match.
   In lecture1 we have already shown that for a language L every word from L* is equal to a flattened list of words from L.
-  The following auxiliary result does something similar, but here we need to flatten the list twice because the language contains two stars.
+  The auxiliary result at the beginning of the proof for 2e does something similar, but here we need to flatten the list twice because the language contains two stars.
   -/
+
+theorem ex_2e (L₁ L₂ : Language Sigma) : (L₁* ∪ L₂*)* = (L₁ ∪ L₂)* := by
+  apply Set.ext
+  intro w
+
   have aux : ∀ w, w ∈ (L₁* ∪ L₂*)* ↔ ∃ (l : List (List (Word Sigma))), w = l.flatten.flatten ∧ ∀ u ∈ l, ((∀ x ∈ u, x ∈ L₁) ∨ (∀ x ∈ u, x ∈ L₂)) := by
     intro v
     constructor
@@ -612,6 +613,7 @@ theorem ex_2e (L₁ L₂ : Language Sigma) : (L₁* ∪ L₂*)* = (L₁ ∪ L₂
       apply union_subset
       exact u_mem_union
 
+-- it is also possible to prove this with a different approach that is not as close to the exercise solution.
   /-
   constructor
   . intro w_mem

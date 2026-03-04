@@ -23,7 +23,9 @@ variable {Sigma : Type u} [DecidableEq Sigma]
 /-- Words are merely lists over some alphabet Sigma. -/
 abbrev Word (Sigma : Type u) := List Sigma
 
-/-- Let's define concatenation as multiplication. -/
+/-- Let's define concatenation as multiplication.
+Concatenating two words u and v simpy means appending list v to list u. By defining this operation
+-/
 instance : Mul (Word Sigma) where
   mul u v := List.append u v
 

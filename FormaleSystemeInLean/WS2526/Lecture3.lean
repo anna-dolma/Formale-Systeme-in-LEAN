@@ -188,6 +188,7 @@ theorem totalDFA_eq_DFA (M : DFA Q Sigma) : M.Language = (M.to_totalDFA).Languag
 theorem to_DFA_δ_eq (M : TotalDFA Q Sigma) (q : Q) (a : Sigma) : M.δ q a = M.to_DFA.δ q a := by
   simp only [TotalDFA.to_DFA]
 
+/--  The transition function for words of a total DFA M and M.to_DFA have the same values for every input (q,w). -/
 theorem to_DFA_δ_word_eq (M : TotalDFA Q Sigma) (q : Q) (w : Word Sigma) : M.δ_word q w = M.to_DFA.δ_word q w := by
   induction w generalizing q with
   | nil =>
@@ -196,7 +197,7 @@ theorem to_DFA_δ_word_eq (M : TotalDFA Q Sigma) (q : Q) (w : Word Sigma) : M.δ
     simp only [DFA.δ_word, TotalDFA.δ_word]
     exact ih (M.δ q a)
 
-/--  The transition function for words of a total DFA M and M.to_DFA have the same values for every input (q,w). -/
+/-- Every total DFA can be seen as a DFA. -/
 theorem DFA_eq_totalDFA (M : TotalDFA Q Sigma) : M.Language = (M.to_DFA).Language := by
   apply Set.ext
   intro w

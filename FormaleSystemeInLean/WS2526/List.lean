@@ -49,6 +49,9 @@ theorem List.mem_removeDups [DecidableEq α] (l : List α) : ∀ a, a ∈ l ↔ 
       . simp only [a_eq, false_or]
     . simp only [b_mem, ite_false, List.mem_cons, ih]
 
+/--
+Infix is decidable for Lists whose elements have decidable equality. (The proof is essentially the expanded version of the one from mathlib)
+-/
 instance List.decidableInfix [DecidableEq α] : ∀ (k l : List α), Decidable (k <:+: l)
   | [], l => by
     apply isTrue

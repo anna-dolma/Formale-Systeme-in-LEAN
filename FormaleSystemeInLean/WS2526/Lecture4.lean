@@ -34,8 +34,11 @@ def NFA.δ_word (nfa : NFA Q Sigma) (R : List Q) : (Word Sigma) → List Q
   | .nil => R
   | .cons a v => nfa.δ_word (R.flatMap (nfa.δ · a)) v
 
-/--
 
+/--
+A run of an NFA on a word w is a sequence of states. We can express this using an inductive definition:
+- For every state q, the sequence q is a run on the empty word ε.
+- If an NFA has a run q2...qf on v and q2 is reachable with a from q1, then q1...qf is a run on av.
 -/
 inductive NFA.Run (nfa : NFA Q Sigma) : Q -> Q -> Word Sigma -> Type _
 | self (q : Q) : nfa.Run q q []
