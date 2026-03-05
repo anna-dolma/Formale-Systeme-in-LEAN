@@ -1,52 +1,29 @@
-name: Docs
+name: docs
 
 on:
   push:
-    branches: ["main"]
-  workflow_dispatch:
+    branches: [main]
 
 permissions:
   contents: read
   pages: write
   id-token: write
 
-concurrency:
-  group: "pages"
-  cancel-in-progress: false
-
 jobs:
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+  docs:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-      
-      - name: Install elan
-        run: |
-            curl https://raw.githubusercontent.com/leanprover/elan/master/elan-init.sh -sSf | sh -s -- -y
-            echo "$HOME/.elan/bin" >> $GITHUB_PATH
+      - uses: actions/checkout@v4
 
-      - name: Set Lean version
-        run: |
-          elan toolchain install leanprover/lean4:v4.28.0
-          elan default leanprover/lean4:v4.28.0
-          lean --version
+      - uses: leanprover/lean-action@v1
 
-      - name: Set toolchain
-        run: elan override set leanprover/lean4:v4.28.0  
-      - name: Build Docs
-        working-directory: docs
-        run: lake build -q Formale-Systeme-in-LEAN:docs
+      - run: lake exe cache get
 
-      - name: Setup Pages
-        uses: actions/configure-pages@v5
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v3
+      - run: lake build FormaleSystemeInLean:docs
+        working-directory: FormaleSystemeInLean/docs
+
+      - uses: actions/upload-pages-artifact@v3
         with:
-          path: 'docs/.lake/build/doc'
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v4
+          path: FormaleSystemeInLean/docs/.lake/build/doc
+
+      - uses: actions/deploy-pages@v4
