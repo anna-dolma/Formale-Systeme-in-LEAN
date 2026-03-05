@@ -26,8 +26,8 @@ jobs:
       - name: Install Lean
         uses: leanprover/lean-action@v1
       - name: Build Docs
-        working-directory: FormaleSystemeInLean/docs
-        run: lake build -q FormaleSystemeInLean:docs
+        working-directory: docs
+        run: lake build -q Formale-Systeme-in-LEAN:docs
 
       - name: Setup Pages
         uses: actions/configure-pages@v5
