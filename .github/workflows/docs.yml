@@ -20,7 +20,7 @@ jobs:
       - run: lake exe cache get
 
       - run: lake build FormaleSystemeInLean:docs
-        working-directory: FormaleSystemeInLean/docs
+        working-directory: docs
 
       - uses: actions/upload-pages-artifact@v3
         with:
