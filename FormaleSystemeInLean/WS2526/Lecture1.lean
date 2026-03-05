@@ -329,7 +329,7 @@ containing words consisting of a list of words from L. We can prove that this is
 -/
 
 /--
-We first show a more general result: for any word from L^n, we can find a corresponding list of length n.
+We first show a stronger result: for any word from L^n, we can find a corresponding list of length n.
 -/
 theorem Language.mem_pow (L : Language Sigma) (w : Word Sigma) : w ∈ L^n ↔ ∃ l : (List (Word Sigma)), w = l.flatten ∧ l.length = n ∧ (∀ u ∈ l, u ∈ L) := by
   constructor
