@@ -5,6 +5,9 @@ defaultTargets = ["FormaleSystemeInLean"]
 [[lean_lib]]
 name = "FormaleSystemeInLean"
 
+[[lean_lib]]
+name = "FormaleSystemeInLeanLegacy"
+
 [[require]]
 name = "mathlib"
 scope = "leanprover-community"
