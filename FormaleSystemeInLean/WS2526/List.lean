@@ -1,3 +1,6 @@
+/-!
+This file contains auxiliary results about lists that do not have anything to do with Formale Systeme.
+-/
 
 /--
 Removing all occurrences of [[]] from a list before applying flatten does not change the result of flatten.

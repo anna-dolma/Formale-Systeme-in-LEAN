@@ -1,8 +1,18 @@
--- inspired by mathlib
+/-!
+Fintype related definitions and results.
+-/
+
+
+/--
+Fintype is used to express that a type is finite by requiring a list that contains all elements of this type. (inspired by mathlib)
+-/
 class Fintype (α : Type u) where
   elems : List α
   complete : ∀ a : α, a ∈ elems
 
+/--
+Subtype of α containing elements of l
+-/
 def subtype_of_list (l : List α) := { x : α // x ∈ l }
 
 instance (l : List α) : Fintype (subtype_of_list l) where
@@ -13,6 +23,7 @@ instance (l : List α) : Fintype (subtype_of_list l) where
     simp only [List.attach, subtype_of_list, List.attachWith]
     grind
 
+/-- If α is finite then Option α is finite as well. -/
 instance [T : Fintype α] : Fintype (Option α) where
   elems := T.elems.map (some · ) ++ [.none]
   complete := by
