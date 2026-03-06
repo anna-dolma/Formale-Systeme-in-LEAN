@@ -223,6 +223,7 @@ It remains to prove that every Set α is contained in the resulting list of sets
 /--
 If X is a subset of Y and there is a corresponding list for Y, then there must be a list for X as well.
 We need to assume that the predicate X is decidable here.
+
 -/
 theorem list_of_subset (X Y : Set α) (h : ∃ (l' : List α), Y = l'.toSet) : X ⊆ Y → ∃ (l : List α), X = l.toSet := by
   intro sub
@@ -250,6 +251,7 @@ theorem list_of_subset (X Y : Set α) (h : ∃ (l' : List α), Y = l'.toSet) : X
 /--
 If X is a subset of Y and the list for the superset Y has at most the length T.elems.length,
 then there is a list for X that is contained in the powerlist of T.elems.
+We need to assume that the predicate X is decidable here.
 -/
 theorem mem_powerlist_of_subset (T : Fintype α) (X Y : Set α) (h : ∃ (l' : List α), Y = l'.toSet ∧ l'.length ≤ T.elems.length) : X ⊆ Y → ∃ (l : List α), X = l.toSet ∧ l ∈ (T.elems.power_upto T.elems.length)  := by
   intro sub
@@ -310,7 +312,7 @@ theorem mem_powerlist_of_fintype_set (T : Fintype α) (S : Set α) : ∃ (l : Li
       apply Or.inr; rfl
   apply mem_powerlist_of_subset T S T.elems.toSet elems_list sub
 
-instance [T : Fintype α] [BEq α] : Fintype (Powertype α) where
+instance [T : Fintype α] [DecidableEq α] : Fintype (Powertype α) where
   elems := (T.elems.power_upto T.elems.length).map (fun x => x.toSet)
   complete := by
     intro S
@@ -319,7 +321,7 @@ instance [T : Fintype α] [BEq α] : Fintype (Powertype α) where
     rw [l_eq, List.mem_map]
     exists l
 
-instance [T : Fintype α] [DecidableEq α] : Fintype (Set α) where
+instance [T : Fintype α] [BEq α] : Fintype (Set α) where
   elems := (T.elems.power_upto T.elems.length).map (fun x => x.toSet)
   complete := by
     intro S
