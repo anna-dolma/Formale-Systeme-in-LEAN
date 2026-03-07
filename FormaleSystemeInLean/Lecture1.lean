@@ -23,9 +23,7 @@ variable {Sigma : Type u} [DecidableEq Sigma]
 /-- Words are merely lists over some alphabet Sigma. -/
 abbrev Word (Sigma : Type u) := List Sigma
 
-/-- Let's define concatenation as multiplication.
-Concatenating two words u and v simpy means appending list v to list u. By defining this operation
--/
+/-- Concatenating two words u and v simpy means appending list v to list u. This typeclass instance enables us to write * as an infix operator. -/
 instance : Mul (Word Sigma) where
   mul u v := List.append u v
 
@@ -501,6 +499,10 @@ theorem add_exp [BEq Sigma] (L : Language Sigma) (m n : Nat) : (L^n) * L^m = L^(
         conv => right; right; rw [List.take_length]
         rw [List.take_append_drop]
 
+/--
+Using the two previous results first_power and add_exp, we can show that when writing the nth power of a language L
+as the concatenation of L with L^(-1) the order does not matter.
+-/
 theorem pow_as_concat_comm (L : Language Sigma) (n : Nat) : L * L^(n-1) = (L^(n-1)) * L := by
   rw (occs := [1, 4]) [← first_power L]
   rw [add_exp L 1 (n-1)]

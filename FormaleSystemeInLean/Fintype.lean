@@ -15,6 +15,7 @@ Subtype of α containing elements of l
 -/
 def subtype_of_list (l : List α) := { x : α // x ∈ l }
 
+/-- A subtype of α created from the list l is finite. -/
 instance (l : List α) : Fintype (subtype_of_list l) where
   elems := l.attach
   complete := by
@@ -42,5 +43,6 @@ instance [T : Fintype α] : Fintype (Option α) where
       . exact T.complete r
       . exact r_eq
 
+/-- If α is a finite type with decidable equality we can give a BEq instance for the subtype of α created from list l as follows. -/
 instance [Fintype α] [DecidableEq α] (l : List α) : BEq (subtype_of_list l) where
   beq := fun q r => if q.val = r.val then true else false

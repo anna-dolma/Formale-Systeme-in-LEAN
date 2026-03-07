@@ -49,7 +49,6 @@ section Exercise3
     /-!
     How about the other direction - does language inclusion also imply a simulation between the NFAs recognising the languages?
     We can show that this is not true by giving a counterexample.
-
     In order to define NFAs we first need Fintypes for Q and Sigma. We cannot just use strings because there are infinitely many of those.
     Instead we use a subtype of String defined by a list of strings (statesList and sigma).
     -/

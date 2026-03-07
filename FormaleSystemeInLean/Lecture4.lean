@@ -28,7 +28,7 @@ variable {Q : Type u} {Sigma : Type v} [Fintype Q] [Fintype Sigma]
 /--
 Transition function for words mapping a word w ∈ Σ* and a list of states R to another list of states.
 - w = ε: the NFA remains in one of the states from R so δ_word(R,ε) = R
-- w = av: δ_word(av,R) = δ_word(R',v) where R is the list of states reachable from some state in
+- w = av: δ_word(R,av) = δ_word(R',v) where R' is the list of states reachable from some state R with a
 -/
 def NFA.δ_word (nfa : NFA Q Sigma) (R : List Q) : (Word Sigma) → List Q
   | .nil => R

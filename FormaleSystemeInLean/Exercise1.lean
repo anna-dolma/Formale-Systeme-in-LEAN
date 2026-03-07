@@ -13,6 +13,10 @@ section Exercise1
 
   variable {L1 L2 L3 L4 : Language Sigma}
 
+  /-!
+  The following three theorems show the monotonicity of union, concatenation and kleene star for languages.
+  -/
+
   theorem a : L1 ⊆ L3 -> L2 ⊆ L4 -> L1 ∪ L2 ⊆ L3 ∪ L4 := by
     intro sub1 sub2 w w_mem
     cases w_mem with
@@ -60,6 +64,7 @@ end Exercise1
 
 section Exercise2
 
+  /-- Concatenation of languages is distributive over union. -/
   theorem ex_2_a1 {L1 L2 L3 : Language Sigma} : L1 * (L2 ∪ L3) = L1 * L2 ∪ L1 * L3 := by
     apply Set.ext
     intro w
@@ -106,6 +111,7 @@ section Exercise2
     def L2 : Language Char := fun w => w = ['c']
     def L3 : Language Char := fun w => w = ['b', 'c']
 
+    /-- Concatenation of languages is not distributive over intersection. We show this by giving a counterexample. -/
     theorem ex_2_a2 : L1 * (L2 ∩ L3) ≠ (L1 * L2) ∩ (L1 * L3) := by
       let prob_word := ['a', 'b', 'c']
 
@@ -358,51 +364,58 @@ section Exercise2
 
   end c
 
-    theorem ex_2f_2 : ∀ (L : Language Sigma), L* * L* = L* := by
-      intro L
-      apply Set.ext
-      intro w
+  /-- Concatenating L* with itself results in L*. -/
+  theorem ex_2f_2 : ∀ (L : Language Sigma), L* * L* = L* := by
+    intro L
+    apply Set.ext
+    intro w
+    constructor
+    . intro h1
+      unfold Language.kstar at h1
+      unfold Language.kstar
+      rcases h1 with ⟨u, u_mem, v, v_mem, w_eq⟩
+      rcases u_mem with ⟨n, u_mem⟩
+      rcases v_mem with ⟨m, v_mem⟩
+      exists n+m
+      rw [← add_exp]
+      exists u
       constructor
-      . intro h1
-        unfold Language.kstar at h1
-        unfold Language.kstar
-        rcases h1 with ⟨u, u_mem, v, v_mem, w_eq⟩
-        rcases u_mem with ⟨n, u_mem⟩
-        rcases v_mem with ⟨m, v_mem⟩
-        exists n+m
-        rw [← add_exp]
-        exists u
+      . exact u_mem
+      . exists v
+    . intro w_mem
+      exists w
+      constructor
+      . exact w_mem
+      . exists []
         constructor
-        . exact u_mem
-        . exists v
-      . intro w_mem
-        exists w
-        constructor
-        . exact w_mem
-        . exists []
-          constructor
-          . exists 0
-          . rw [epsilon_concat]
+        . exists 0
+        . rw [epsilon_concat]
 
 section d
+  /-!
+  In section d of the exercise we show some properties of the kleene star operator:
+  - ∅* = {ε}
+  - ({ε} ∪ L)* = L*
+  - (L*)* = L*
+  -/
 
-theorem ex_2d_1 : (@L_empty Sigma)* = L_eps := by
-  unfold L_empty L_eps Language.kstar
-  apply Set.ext
-  intro w
-  constructor
-  . intro w_mem
-    rcases w_mem with ⟨n, w_mem⟩
-    cases n
-    . rcases w_mem
-      simp only [Membership.mem]
-    . exfalso
-      rcases w_mem with ⟨v, v_mem, x, x_mem, w_eq⟩
-      unfold Language.pow at x_mem
-      exact v_mem
-  . intro h
-    apply Exists.intro 0
-    trivial
+  theorem ex_2d_1 : (@L_empty Sigma)* = L_eps := by
+    unfold L_empty L_eps Language.kstar
+    apply Set.ext
+    intro w
+    constructor
+    . intro w_mem
+      rcases w_mem with ⟨n, w_mem⟩
+      cases n
+      . rcases w_mem
+        simp only [Membership.mem]
+      . exfalso
+        rcases w_mem with ⟨v, v_mem, x, x_mem, w_eq⟩
+        unfold Language.pow at x_mem
+        exact v_mem
+    . intro h
+      apply Exists.intro 0
+      trivial
 
   theorem ex_2d_2 : ((@L_eps Sigma) ∪ L)* = L* := by
     apply Set.ext
