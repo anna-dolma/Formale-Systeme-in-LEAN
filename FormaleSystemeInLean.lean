@@ -3,10 +3,8 @@ import FormaleSystemeInLean.Exercise2
 import FormaleSystemeInLean.Fintype
 import FormaleSystemeInLean.FintypeSetDecidableEq
 import FormaleSystemeInLean.Lecture1
-import FormaleSystemeInLean.Lecture2
 import FormaleSystemeInLean.Lecture3
 import FormaleSystemeInLean.Lecture4
 import FormaleSystemeInLean.List
 import FormaleSystemeInLean.Powertype
 import FormaleSystemeInLean.Set
-
