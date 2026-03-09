@@ -151,7 +151,7 @@ Since we defined the states Q as some type with a Fintype instance, computing th
 A Fintype is simply a type with finitely many elements. This can be expressed by requiring the existence of a list with all elements of Q.
 The Powertype of Q is the list of all possible subsets of this list. We use subsets instead of lists because the powertype needs to be finite.
 If you are interested in the details have a look at Powertype.lean. It is not required to understand the definitions and proofs concerning Powertype
-to understand the section toNFA.
+to understand the section toDFA.
 -/
 
 /-- A function turning an NFA into a total DFA. -/

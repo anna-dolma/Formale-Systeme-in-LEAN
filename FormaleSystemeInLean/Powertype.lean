@@ -30,11 +30,10 @@ def List.power_upto (l : List α) (n : Nat) : List (List α) :=
   loop n
 
 /-!
-This showcases how the power of a list is computed. As you can see, all the
+This example shows how the power of a list is computed. As you can see, all the
 different lists are added to the powerlist multiple times.
 -/
 #eval [0, 1, 2, 3].power_upto 4
---#eval ([0, 1, 2, 3].power_upto 4).eraseDups
 
 /-!
 After defining the power of a list, we can use this function to compute the Powertype of a Fintype
