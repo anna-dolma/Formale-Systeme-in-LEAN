@@ -35,7 +35,7 @@ theorem toSet_eq_iff_lists_have_same_members (X Y : Set α) (l k : List α) : l.
 If α is a finite type and membership is decidable for every Set α then two sets X and Y are equal iff their corresponding lists have the same members.
 We need to assume (DecidablePred S) for every (S : Set α) in order to obtain a list with the same elements as S by filtering Fintype.elems for members of S.
 -/
-theorem set_eq_iff_filter_has_same_members (α : Type u) (h : ∀ (S : Set α), DecidablePred S) (T : Fintype α) (X Y : Set α) : X = Y ↔ (∀ a, a ∈ T.elems.filter ( · ∈ X) ↔ a ∈ T.elems.filter ( · ∈ Y)) := by
+theorem set_eq_iff_filter_has_same_members (α : Type u) (T : Fintype α) (X Y : Set α) (d1 : DecidablePred X) (d2 : DecidablePred Y) : X = Y ↔ (∀ a, a ∈ T.elems.filter ( · ∈ X) ↔ a ∈ T.elems.filter ( · ∈ Y)) := by
   constructor
   . intro xy_eq
     intro x
@@ -49,14 +49,19 @@ theorem set_eq_iff_filter_has_same_members (α : Type u) (h : ∀ (S : Set α), 
     have x_mem_elems := T.complete x
     apply h x x_mem_elems
 
+theorem mem_iff (S : Set α) : S x ↔ x ∈ S := by
+  constructor
+  . intro h; simp only [Membership.mem]; exact h
+  . intro mem; simp only [Membership.mem] at mem; exact mem
+
 /--
 If α is a finite type and membership is decidable for every Set α then two sets X and Y are equal iff their corresponding lists are equal.
 We need to assume (DecidablePred S) for every (S : Set α) in order to obtain a list with the same elements as S by filtering Fintype.elems for members of S.
 -/
-theorem set_eq_iff_filter_eq (α : Type u) (h : ∀ (S : Set α), DecidablePred S) (T : Fintype α) (X Y : Set α) : X = Y ↔ T.elems.filter ( · ∈ X) = T.elems.filter ( · ∈ Y) := by
+theorem set_eq_iff_filter_eq (α : Type u) (T : Fintype α) (X Y : Set α) (d1 : DecidablePred X) (d2 : DecidablePred Y) : X = Y ↔ T.elems.filter ( · ∈ X) = T.elems.filter ( · ∈ Y) := by
   constructor
   . intro eq
-    rw [eq]
+    simp_all only
   . intro eq
     apply Set.ext
     intro x
@@ -80,7 +85,7 @@ theorem set_eq_iff_filter_eq (α : Type u) (h : ∀ (S : Set α), DecidablePred 
 
 instance {α : Type u} [T : Fintype α] [DecidableEq α] [h : ∀ (S : Set α), DecidablePred S] : DecidableEq (Set α) := by
   intro X Y
-  have aux := set_eq_iff_filter_eq α h T X Y
+  have aux := set_eq_iff_filter_eq α T X Y
   simp only [aux]
   by_cases h : List.filter (fun x => decide (x ∈ X)) Fintype.elems
     = List.filter (fun x => decide (x ∈ Y)) Fintype.elems

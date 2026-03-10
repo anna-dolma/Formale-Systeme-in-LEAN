@@ -1,7 +1,5 @@
 import FormaleSystemeInLean.Lecture1
 
-set_option linter.unusedSectionVars false
-
 /-!
 Formalisation of Lecture 3:
 Covers the definition of DFAs and total DFAs, the corresponding languages and how to obtain a total DFA from

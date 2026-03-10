@@ -66,7 +66,8 @@ section Exercise3
     instance : Inter (Powertype Q) where
       inter A B := fun e => e ∈ A ∧ e ∈ B
 
-    variable {h : ∀ (S : Set Q), DecidablePred S}
+    --variable {h : ∀ (S : Set Q), DecidablePred S}
+    variable [DecidableEq (Set Q)]
 
     /--
     Finally we can define the NFA 𝓜.
@@ -241,7 +242,7 @@ section Exercise3
             rcases q_mem with ⟨r, r_mem, q_mem⟩
             cases r_mem with
             | inl r_mem =>
-              simp only [r_mem, String.reduceEq, imp_self, List.mem_cons, List.not_mem_nil, or_false] at q_mem
+              simp only [r_mem, List.mem_cons, List.not_mem_nil, or_false] at q_mem
               simp only [Membership.mem]
               exact q_mem
             | inr r_mem =>

@@ -1,8 +1,6 @@
 import FormaleSystemeInLean.List
 import FormaleSystemeInLean.Powertype
 
-set_option linter.unusedSectionVars false
-
 /-!
 Formalisation of lecture 1:
 This file covers the definition of words and languages as well as
@@ -27,7 +25,7 @@ abbrev Word (Sigma : Type u) := List Sigma
 instance : Mul (Word Sigma) where
   mul u v := List.append u v
 
-theorem Word.mul_eq (u v : Word Sigma) : u * v = u++v := by
+omit [DecidableEq Sigma] in theorem Word.mul_eq (u v : Word Sigma) : u * v = u++v := by
   trivial
 
 /-- Concatenation of words is associative. -/

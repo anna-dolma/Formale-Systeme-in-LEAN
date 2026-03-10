@@ -1,7 +1,5 @@
 import FormaleSystemeInLean.Lecture3
 
-set_option linter.unusedSectionVars false
-
 /-!
 This file covers selected topics from lecture 4:
 - definition of an NFA, the run of an NFA and the language accepted by an NFA
@@ -155,7 +153,7 @@ to understand the section toDFA.
 -/
 
 /-- A function turning an NFA into a total DFA. -/
-def NFA.to_TotalDFA (M : NFA Q Sigma) [DecidableEq Q] [DecidableEq (Set Q)] : TotalDFA (Powertype Q) Sigma where
+def NFA.to_TotalDFA (M : NFA Q Sigma) [DecidableEq Q] [DecidableEq (Powertype Q)] : TotalDFA (Powertype Q) Sigma where
   δ := fun R a => fun q => ∃ r ∈ R, q ∈ M.δ r a
   q0 := M.Q0.toSet
   F := Fintype.elems.filter (fun x => M.F.toSet ∩ x != ∅)

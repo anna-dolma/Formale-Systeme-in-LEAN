@@ -75,39 +75,3 @@ def List.isInfixOf [DecidableEq α] : List α → List α → Bool
   | [], _ => true
   | _, [] => false
   | a::s, b::k => a::s <+: b::k ∨ s.isInfixOf k
-
-theorem List.isInfixOf_cons [DecidableEq α] (k l : List α) (a : α) : k.isInfixOf l → k.isInfixOf (a::l) := by
-  intro h
-
-  sorry
-
--- TO DO
-theorem List.isInfixOf_iff_Infix [DecidableEq α] (k l : List α) : k.isInfixOf l ↔ k <:+: l := by
-  induction l generalizing k with
-  | nil =>
-    cases  k_eq : k with
-    | nil =>
-      simp only [infix_rfl, iff_true]
-      rfl
-    | cons hd tl =>
-      simp only [infix_nil, reduceCtorEq, iff_false, Bool.not_eq_true]
-      rfl
-  | cons b s ih =>
-    constructor
-    . intro h
-      unfold isInfixOf at h
-
-      sorry
-    . intro h
-      unfold isInfixOf
-      cases k_eq : k with
-      | nil =>
-        simp only
-      | cons hd tl =>
-        simp
-        rcases h with ⟨f, g, x⟩
-        by_cases hb : hd = b
-        . sorry
-        .
-          sorry
-

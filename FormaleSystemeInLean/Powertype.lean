@@ -1,7 +1,5 @@
 import FormaleSystemeInLean.Set
 
-set_option linter.unusedSectionVars false
-
 
 /-!
 The powerset DFA (as it is defined in Lecture 4) has subsets of Q (the states of the original NFA)
