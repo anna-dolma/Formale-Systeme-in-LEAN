@@ -1,5 +1,5 @@
 import FormaleSystemeInLean.Set
-
+import FormaleSystemeInLean.Finset
 
 /-!
 The powerset DFA (as it is defined in Lecture 4) has subsets of Q (the states of the original NFA)
@@ -326,3 +326,31 @@ instance [T : Fintype α] [BEq α] : Fintype (Set α) where
     rcases exists_l with ⟨l, l_eq, l_mem⟩
     rw [l_eq, List.mem_map]
     exists l
+
+
+--------------------
+
+def Powertype' (α : Type u) := Finset α
+
+theorem removeDups_mem_power [DecidableEq α] (T : Fintype α) (l : List α) : l.removeDups.length ≤ T.elems.length := by
+
+  sorry
+
+theorem exists_mem_powerlist_of_finset' (S : Finset α) [DecidableEq α] : ∃ (l : List α), Finset.mk l = S := by
+  have test := Quot.exists_rep S
+  rcases test with ⟨x, y⟩
+  exists x
+
+instance [T : Fintype α] [DecidableEq α] : Fintype (Powertype' α) where
+  elems := (T.elems.power_upto T.elems.length).map (fun x => Finset.mk x)
+  complete := by
+    intro S
+    simp only [List.mem_map]
+    unfold Powertype' at S
+    have exists_r := Quot.exists_rep S
+    rcases exists_r with ⟨l, S_eq⟩
+    exists l.removeDups
+    constructor
+    .
+      sorry
+    . sorry

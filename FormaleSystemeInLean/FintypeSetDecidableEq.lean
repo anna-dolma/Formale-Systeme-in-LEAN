@@ -56,7 +56,7 @@ theorem mem_iff (S : Set α) : S x ↔ x ∈ S := by
 
 /--
 If α is a finite type and membership is decidable for every Set α then two sets X and Y are equal iff their corresponding lists are equal.
-We need to assume (DecidablePred S) for every (S : Set α) in order to obtain a list with the same elements as S by filtering Fintype.elems for members of S.
+We need to assume DecidablePred for the sets X and Y in order to obtain a list with the same elements as X and Y by filtering Fintype.elems for their members.
 -/
 theorem set_eq_iff_filter_eq (α : Type u) (T : Fintype α) (X Y : Set α) (d1 : DecidablePred X) (d2 : DecidablePred Y) : X = Y ↔ T.elems.filter ( · ∈ X) = T.elems.filter ( · ∈ Y) := by
   constructor
