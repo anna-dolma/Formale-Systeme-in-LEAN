@@ -332,25 +332,23 @@ instance [T : Fintype α] [BEq α] : Fintype (Set α) where
 
 def Powertype' (α : Type u) := Finset α
 
-theorem removeDups_mem_power [DecidableEq α] (T : Fintype α) (l : List α) : l.removeDups.length ≤ T.elems.length := by
-
-  sorry
-
-theorem exists_mem_powerlist_of_finset' (S : Finset α) [DecidableEq α] : ∃ (l : List α), Finset.mk l = S := by
-  have test := Quot.exists_rep S
-  rcases test with ⟨x, y⟩
-  exists x
-
 instance [T : Fintype α] [DecidableEq α] : Fintype (Powertype' α) where
   elems := (T.elems.power_upto T.elems.length).map (fun x => Finset.mk x)
   complete := by
     intro S
     simp only [List.mem_map]
     unfold Powertype' at S
-    have exists_r := Quot.exists_rep S
-    rcases exists_r with ⟨l, S_eq⟩
-    exists l.removeDups
+    exists T.elems.filter (fun x => decide (x ∈ S))
     constructor
-    .
-      sorry
-    . sorry
+    . have length : (T.elems.filter (fun x => decide (x ∈ S))).length ≤ T.elems.length := by apply List.length_filter_le
+      exact powerlist T (T.elems.filter (fun x => decide (x ∈ S))) length
+    . apply (ext_iff (Finset.mk (T.elems.filter (fun x => decide (x ∈ S)))) S).mpr
+      intro a
+      have mem_iff : ∀ a, a ∈ (T.elems.filter (fun x => decide (x ∈ S))) ↔ a ∈ S := by
+        intro a
+        simp only [List.mem_filter, decide_eq_true_eq, and_iff_right_iff_imp]
+        intro a_mem
+        exact T.complete a
+      have mem_mk : ∀ a, a ∈ (T.elems.filter (fun x => decide (x ∈ S))) ↔ a ∈ (Finset.mk (T.elems.filter (fun x => decide (x ∈ S)))) := by
+        apply mem_finset_iff_mem_mk
+      grind

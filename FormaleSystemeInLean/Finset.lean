@@ -103,17 +103,6 @@ def Finset.union : Finset α -> Finset α -> Finset α :=
       exact aux2
     )
 
-def Finset.ext : Finset α -> Finset α -> Prop :=
-  Quotient.lift₂
-    (fun a b => Finset.eq a b)
-    (by
-      intro a1 a2 b1 b2 eq1 eq2
-      simp only [HasEquiv.Equiv, Setoid.r, eq] at *
-      simp only [eq_iff_iff]
-      grind)
-
-
-
 def Finset.insert (a : α) : Finset α → Finset α :=
   Quot.lift
     (fun s => Finset.mk (a::s))
@@ -140,8 +129,6 @@ def Finset.insert (a : α) : Finset α → Finset α :=
       have aux2 := Quot.sound aux
       exact aux2)
 
-
-
 instance : EmptyCollection (Finset α) where
   emptyCollection := Finset.mk []
 
@@ -154,19 +141,30 @@ instance : Union (Finset α) where
 instance : HasSubset (Finset α) where
   Subset A B := ∀ e, e ∈ A -> e ∈ B
 
-theorem test (X Y : Finset α) : X = Y -> (∀ a, a ∈ X ↔ a ∈ Y) := by
-  intro a; grind
+theorem mem_finset_iff_mem_mk (l' : List α) : ∀ a, a ∈ l' ↔ a ∈ Finset.mk l' := by
+  intro a
+  simp only [Finset.mk, Finset.instSetoid, Quotient.mk]
+  unfold Finset.eq
+  simp only [Membership.mem, Finset.mem]
 
-theorem eq_iff (X Y : Finset α)  : X = Y ↔ Finset.ext X Y := by
+theorem ext_iff (X Y : Finset α)  : X = Y ↔ (∀ a, a ∈ X ↔ a ∈ Y) := by
+  have exists_rep_X := Quot.exists_rep X
+  have exists_rep_Y := Quot.exists_rep Y
+  rcases exists_rep_X with ⟨l1, X_eq⟩
+  rcases exists_rep_Y with ⟨l2, Y_eq⟩
+  rw [← X_eq, ← Y_eq]
   constructor
   . intro eq
-    have aux := test X Y eq
-    unfold Finset.ext
-    simp only [Quotient.lift₂, Quotient.lift, Finset.eq]
-
-    sorry
-  .
-    sorry
+    have finset_eq := Quotient.exact eq
+    simp only [HasEquiv.Equiv, Setoid.r, Finset.eq] at finset_eq
+    grind
+  . intro mem_iff
+    apply Quotient.sound
+    simp only [HasEquiv.Equiv, Setoid.r, Finset.eq]
+    intro a
+    rw [mem_finset_iff_mem_mk l1, mem_finset_iff_mem_mk l2]
+    specialize mem_iff a
+    exact mem_iff
 
 instance [DecidableEq α] (x : α) (S : Finset α) : Decidable (x ∈ S) :=
   Quot.recOnSubsingleton S (fun l => List.instDecidableMemOfLawfulBEq x l)
