@@ -332,6 +332,9 @@ instance [T : Fintype α] [BEq α] : Fintype (Set α) where
 
 def Powertype' (α : Type u) := Finset α
 
+instance : Membership α (Powertype' α) where
+  mem S a := Finset.mem a S
+
 instance [T : Fintype α] [DecidableEq α] : Fintype (Powertype' α) where
   elems := (T.elems.power_upto T.elems.length).map (fun x => Finset.mk x)
   complete := by
@@ -352,3 +355,5 @@ instance [T : Fintype α] [DecidableEq α] : Fintype (Powertype' α) where
       have mem_mk : ∀ a, a ∈ (T.elems.filter (fun x => decide (x ∈ S))) ↔ a ∈ (Finset.mk (T.elems.filter (fun x => decide (x ∈ S)))) := by
         apply mem_finset_iff_mem_mk
       grind
+
+--instance [T : Fintype α] [DecidableEq α] : DecidableEq (Powertype' α) :=

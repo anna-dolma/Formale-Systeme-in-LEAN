@@ -158,6 +158,41 @@ def NFA.to_TotalDFA (M : NFA Q Sigma) [DecidableEq Q] [DecidableEq (Powertype Q)
   q0 := M.Q0.toSet
   F := Fintype.elems.filter (fun x => M.F.toSet ∩ x != ∅)
 
+-- frage: wie kann ich rw auf beiden seiten von iff anwenden??? occs ging nicht
+def powerset_delta (M : NFA Q Sigma) [DecidableEq Q] [DecidableEq (Powertype' Q)] : Powertype' Q -> Sigma -> Powertype' Q :=
+  Quotient.lift
+    (fun R a => Finset.mk (R.flatMap (fun q => M.δ q a)))
+    (by
+      intro X Y eq
+      simp only
+      funext a
+      simp only [HasEquiv.Equiv, Setoid.r, Finset.eq] at eq
+      apply Quot.sound
+      simp only [Setoid.r, Finset.eq]
+      intro s
+      rw [List.mem_flatMap]
+      constructor
+      . intro h
+        rcases h with ⟨t, t_mem, s_mem⟩
+        rw [List.mem_flatMap]
+        exists t
+        constructor
+        . apply (eq t).mp; exact t_mem
+        . exact s_mem
+      . rw [List.mem_flatMap]
+        intro h
+        rcases h with ⟨t, t_mem, s_mem⟩
+        exists t
+        constructor
+        . apply (eq t).mpr; exact t_mem
+        . exact s_mem
+        )
+
+def NFA.to_TotalDFA' (M : NFA Q Sigma) [DecidableEq Q] [DecidableEq (Powertype' Q)] : TotalDFA (Powertype' Q) Sigma where
+  δ := fun R a => powerset_delta M R a --fun q => ∃ r ∈ R, q ∈ M.δ r a
+  q0 := Finset.mk M.Q0
+  F := sorry--Fintype.elems.filter (fun x => (Finset.mk M.F) ∩ x != ∅)
+
 /-!
 The following section deals with the conversion from DFA to NFA.
 We proceed in a similar manner as we did for the proof of totalDFA_eq_DFA in lecture3 by first showing that the transition functions of M and M.to_NFA are (almost) equal

@@ -168,3 +168,18 @@ theorem ext_iff (X Y : Finset α)  : X = Y ↔ (∀ a, a ∈ X ↔ a ∈ Y) := b
 
 instance [DecidableEq α] (x : α) (S : Finset α) : Decidable (x ∈ S) :=
   Quot.recOnSubsingleton S (fun l => List.instDecidableMemOfLawfulBEq x l)
+
+def decidableMem [DecidableEq α] (l : List α) (a : α) := List.instDecidableMemOfLawfulBEq a l
+
+def Finset.inter [DecidableEq α] : Finset α -> Finset α -> Finset α :=
+  Quotient.lift₂
+    (fun x y => Finset.mk (x.filter (fun a => sorry)))---decide (a ∈ y)))) --(x.removeAll (x.removeAll y)))
+    (by
+
+      sorry)
+
+
+def l1 := [1, 2, 3, 4, 5]
+def l2 := [3, 4, 5, 6, 7]
+#eval l1.removeAll (l1.removeAll l2)
+#check List.Mem
