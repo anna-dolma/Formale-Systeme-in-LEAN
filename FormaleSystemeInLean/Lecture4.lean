@@ -158,41 +158,6 @@ def NFA.to_TotalDFA (M : NFA Q Sigma) [DecidableEq Q] [DecidableEq (Powertype Q)
   q0 := M.Q0.toSet
   F := Fintype.elems.filter (fun x => M.F.toSet ∩ x != ∅)
 
--- frage: wie kann ich rw auf beiden seiten von iff anwenden??? occs ging nicht
-def powerset_delta (M : NFA Q Sigma) [DecidableEq Q] [DecidableEq (Powertype' Q)] : Powertype' Q -> Sigma -> Powertype' Q :=
-  Quotient.lift
-    (fun R a => Finset.mk (R.flatMap (fun q => M.δ q a)))
-    (by
-      intro X Y eq
-      simp only
-      funext a
-      simp only [HasEquiv.Equiv, Setoid.r, Finset.eq] at eq
-      apply Quot.sound
-      simp only [Setoid.r, Finset.eq]
-      intro s
-      rw [List.mem_flatMap]
-      constructor
-      . intro h
-        rcases h with ⟨t, t_mem, s_mem⟩
-        rw [List.mem_flatMap]
-        exists t
-        constructor
-        . apply (eq t).mp; exact t_mem
-        . exact s_mem
-      . rw [List.mem_flatMap]
-        intro h
-        rcases h with ⟨t, t_mem, s_mem⟩
-        exists t
-        constructor
-        . apply (eq t).mpr; exact t_mem
-        . exact s_mem
-        )
-
-def NFA.to_TotalDFA' (M : NFA Q Sigma) [DecidableEq Q] [DecidableEq (Powertype' Q)] : TotalDFA (Powertype' Q) Sigma where
-  δ := fun R a => powerset_delta M R a --fun q => ∃ r ∈ R, q ∈ M.δ r a
-  q0 := Finset.mk M.Q0
-  F := sorry--Fintype.elems.filter (fun x => (Finset.mk M.F) ∩ x != ∅)
-
 /-!
 The following section deals with the conversion from DFA to NFA.
 We proceed in a similar manner as we did for the proof of totalDFA_eq_DFA in lecture3 by first showing that the transition functions of M and M.to_NFA are (almost) equal
@@ -330,3 +295,134 @@ section toDFA
         simp [EmptyCollection.emptyCollection, Membership.mem] at this
 
 end toDFA
+
+section toDFA_Finset
+
+def powerset_delta (M : NFA Q Sigma) [DecidableEq Q] [DecidableEq (Powertype' Q)] : Powertype' Q -> Sigma -> Powertype' Q :=
+  Quotient.lift
+    (fun R a => Finset.mk (R.flatMap (fun q => M.δ q a)))
+    (by
+      intro X Y eq
+      simp only
+      funext a
+      simp only [HasEquiv.Equiv, Setoid.r, Finset.eq] at eq
+      apply Quot.sound
+      simp only [Setoid.r, Finset.eq]
+      intro s
+      rw [List.mem_flatMap]
+      constructor
+      . intro h
+        rcases h with ⟨t, t_mem, s_mem⟩
+        rw [List.mem_flatMap]
+        exists t
+        constructor
+        . apply (eq t).mp; exact t_mem
+        . exact s_mem
+      . rw [List.mem_flatMap]
+        intro h
+        rcases h with ⟨t, t_mem, s_mem⟩
+        exists t
+        constructor
+        . apply (eq t).mpr; exact t_mem
+        . exact s_mem
+        )
+
+  def NFA.to_TotalDFA' (M : NFA Q Sigma) [DecidableEq Q] [DecidableEq (Powertype' Q)] : TotalDFA (Powertype' Q) Sigma where
+  δ := fun R a => powerset_delta M R a --fun q => ∃ r ∈ R, q ∈ M.δ r a
+  q0 := Finset.mk M.Q0
+  F := Fintype.elems.filter (fun x => (Finset.mk M.F) ∩ x != ∅)
+
+  theorem mem_powerset_δ_iff (M : NFA Q Sigma) (a : Sigma) (R : List Q) (q : Q) [DecidableEq Q] [DecidableEq (Finset Q)] : q ∈ M.δ_word R [a] ↔ q ∈ M.to_TotalDFA'.δ (Finset.mk R) a := by
+    simp only [NFA.to_TotalDFA', NFA.δ_word, powerset_delta]
+    have aux := mem_finset_iff_mem_mk (List.flatMap (fun x => M.δ x a) R) q
+    simp only [aux]
+    have aux2 : ∀ x y, Finset.eq x y → Finset.mk (x.flatMap (fun q => M.δ q a)) = Finset.mk (y.flatMap (fun q => M.δ q a)) := by
+      intro x y eq
+      simp only [Finset.eq] at eq
+      apply Quot.sound
+      unfold Setoid.r Finset.instSetoid Finset.eq
+      simp only
+      intro s
+      rw [List.mem_flatMap]
+      constructor
+      . intro h
+        rcases h with ⟨t, t_mem, s_mem⟩
+        rw [List.mem_flatMap]
+        exists t
+        constructor
+        . apply (eq t).mp; exact t_mem
+        . exact s_mem
+      . rw [List.mem_flatMap]
+        intro h
+        rcases h with ⟨t, t_mem, s_mem⟩
+        exists t
+        constructor
+        . apply (eq t).mpr; exact t_mem
+        . exact s_mem
+    have aux3 := Quot.liftBeta (α := Finset' Q) (r := Finset.eq) (β := Finset Q) (f := (fun l => Finset.mk (l.flatMap (fun q => M.δ q a))))
+    specialize aux3 aux2
+    specialize aux3 R
+    rw [← aux3]
+    constructor
+    . intro h; exact h
+    . intro h; exact h
+
+  theorem δ_NFA_eq_δ_TotalDFA' (M : NFA Q Sigma) (a : Sigma) (R : List Q) [DecidableEq Q] [DecidableEq (Finset Q)] : M.to_TotalDFA'.δ (Finset.mk R) a = Finset.mk (M.δ_word R [a]) := by
+    apply (ext_iff (M.to_TotalDFA'.δ (Finset.mk R) a) (Finset.mk (M.δ_word R [a])) ).mpr
+    intro q
+    rw [← mem_finset_iff_mem_mk]
+    simp only [mem_powerset_δ_iff]
+
+  theorem δ_word_eq_DFA_NFA' (M : NFA Q Sigma) (w : Word Sigma) (R : List Q) [DecidableEq Q] [DecidableEq (Powertype' Q)] : ∀ q, q ∈ M.δ_word R w ↔ q ∈ M.to_TotalDFA'.δ_word (Finset.mk R) w := by
+  intro q
+  induction w generalizing q R with
+  | nil =>
+    simp only [NFA.δ_word, TotalDFA.δ_word, mem_finset_iff_mem_mk]
+  | cons a v ih =>
+    simp only [NFA.δ_word]
+    have aux := ih (List.flatMap (fun x => M.δ x a) R)
+    simp only [TotalDFA.δ_word]
+    have aux2 := mem_powerset_δ_iff M a R q
+    rw [δ_NFA_eq_δ_TotalDFA']
+    simp only [NFA.δ_word]
+    grind
+
+  theorem NFA_totalDFA_lang_eq' (M : NFA Q Sigma) [DecidableEq Q] [DecidableEq (Powertype' Q)] [DecidableEq (Set Q)] : M.to_TotalDFA'.Language = M.Language := by
+    apply Set.ext
+    intro w
+    unfold TotalDFA.Language
+    rw [acc_run_iff_δ_word_contains_final]
+
+    have q0_eq : M.to_TotalDFA'.q0 = Finset.mk M.Q0 := rfl
+    have := δ_word_eq_DFA_NFA' M w M.Q0
+    rw [Set.mem_iff]
+    simp only [q0_eq, this]
+
+    constructor
+    . intro mem_F
+
+      sorry
+
+    . sorry
+    /-
+    simp only [NFA.to_TotalDFA']
+    rw [List.mem_filter]
+    constructor
+    . rintro ⟨_, h⟩
+      rcases Set.ne_empty_contains_element _ h with ⟨q, q_mem_f, q_mem_start⟩
+      exists q
+    . rintro ⟨q, q_mem_start, q_mem_f⟩
+      constructor
+      . apply Fintype.complete (α := Powertype Q)
+      . simp only [bne_iff_ne]
+        intro contra
+        have : q ∈ M.F.toSet ∩ (M.δ_word M.Q0 w).toSet := by
+          constructor
+          . exact q_mem_f
+          . exact q_mem_start
+        rw [contra] at this
+        simp [EmptyCollection.emptyCollection, Membership.mem] at this
+    -/
+
+
+end toDFA_Finset
