@@ -353,7 +353,7 @@ instance [T : Fintype α] [DecidableEq α] : Fintype (Powertype' α) where
         intro a_mem
         exact T.complete a
       have mem_mk : ∀ a, a ∈ (T.elems.filter (fun x => decide (x ∈ S))) ↔ a ∈ (Finset.mk (T.elems.filter (fun x => decide (x ∈ S)))) := by
-        apply mem_finset_iff_mem_mk
+        apply mem_list_iff_mem_mk
       grind
 
 --instance [T : Fintype α] [DecidableEq α] : DecidableEq (Powertype' α) :=

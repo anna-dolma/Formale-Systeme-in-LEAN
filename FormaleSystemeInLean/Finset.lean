@@ -141,7 +141,7 @@ instance : Union (Finset α) where
 instance : HasSubset (Finset α) where
   Subset A B := ∀ e, e ∈ A -> e ∈ B
 
-theorem mem_finset_iff_mem_mk (l' : List α) : ∀ a, a ∈ l' ↔ a ∈ Finset.mk l' := by
+theorem mem_list_iff_mem_mk (l' : List α) : ∀ a, a ∈ l' ↔ a ∈ Finset.mk l' := by
   intro a
   simp only [Finset.mk, Finset.instSetoid, Quotient.mk]
   unfold Finset.eq
@@ -162,7 +162,7 @@ theorem ext_iff (X Y : Finset α)  : X = Y ↔ (∀ a, a ∈ X ↔ a ∈ Y) := b
     apply Quotient.sound
     simp only [HasEquiv.Equiv, Setoid.r, Finset.eq]
     intro a
-    rw [mem_finset_iff_mem_mk l1, mem_finset_iff_mem_mk l2]
+    rw [mem_list_iff_mem_mk l1, mem_list_iff_mem_mk l2]
     specialize mem_iff a
     exact mem_iff
 
@@ -208,17 +208,67 @@ theorem Finset.eq_rfl (X : Finset α) : X = X := by
 def l1 := [1, 2, 3, 4, 5]
 def l2 := [3, 4, 5, 6, 7]
 #eval l1.removeAll (l1.removeAll l2)
-#check Quot.liftBeta
+#check Quotient.exact
 
-instance [DecidableEq α] [T : Fintype α] (X Y : Finset α) : Decidable (X = Y) := by
-  have aux := ext_iff X Y
-  have mem_iff : ∀ (S : Finset α) (x : α), x ∈ S ↔ decide (x ∈ S) = true := by grind
+theorem eq_if_perm [DecidableEq α] (l k : Finset' α) (perm : l.removeDups.Perm k.removeDups) : Finset.eq l k := by
+  simp only [Finset.eq]
+  intro a
+  have aux := List.Perm.mem_iff (a := a) perm
+  rw [← List.mem_removeDups, ← List.mem_removeDups] at aux
+  exact aux
 
-  by_cases h : List.filter (fun x => decide (x ∈ X)) Fintype.elems
-    = List.filter (fun x => decide (x ∈ Y)) Fintype.elems
-  .
-    sorry
-  . sorry
+theorem Finset.perm_iff_eq [DecidableEq α] (l k : Finset' α) : l.removeDups.Perm k.removeDups ↔ Finset.eq l k := by
+  constructor
+  . intro perm; exact eq_if_perm l k perm
+  . intro eq; exact perm_if_eq l k eq
+
+instance [DecidableEq α] (l k : Finset' α) : Decidable (Finset.eq l k) := by
+  rw [← Finset.perm_iff_eq]
+  by_cases h : (List.removeDups l).Perm (List.removeDups k)
+  . apply isTrue h
+  . apply isFalse h
+
+instance [DecidableEq α] (l k : Finset' α) : Decidable (l ≈ k) := by
+  simp only [HasEquiv.Equiv, Setoid.r]
+  rw [← Finset.perm_iff_eq]
+  by_cases h : (List.removeDups l).Perm (List.removeDups k)
+  . apply isTrue h
+  . apply isFalse h
+
+theorem Quotient.eq_iff_equiv {α : Sort u} {s : Setoid α} {a b : α} : a ≈ b ↔ Quotient.mk s a = Quotient.mk s b := by
+  constructor
+  . intro h; apply Quotient.sound; exact h
+  . intro h; apply Quotient.exact; exact h
+
+instance decidableEq [DecidableEq α] : DecidableEq (Finset α)
+  | a, b => Quotient.recOnSubsingleton₂ a b fun _ _ => decidable_of_iff _ Quotient.eq_iff_equiv
+
+theorem Finset.eq_iff_exists_eq_rep [DecidableEq α] (X Y : Finset α) : X = Y ↔ ∃ (l k : Finset' α), Finset.mk l = X ∧ Finset.mk k = Y ∧ Finset.eq l k := by
+  have rep_X := Quot.exists_rep X
+  have rep_Y := Quot.exists_rep Y
+  rcases rep_X with ⟨l, X_eq⟩
+  rcases rep_Y with ⟨k, Y_eq⟩
+  constructor
+  . intro eq
+    rw [ext_iff] at eq
+    exists l, k
+    constructor
+    . exact X_eq
+    . constructor
+      . exact Y_eq
+      . rw [← X_eq, ← Y_eq] at eq
+        unfold Finset.eq
+        intro a
+        specialize eq a
+        rw [mem_list_iff_mem_mk, mem_list_iff_mem_mk]
+        exact eq
+  . intro h
+    rcases h with ⟨l, k, X_eq, Y_eq, lk_eq⟩
+    rw [ext_iff, ← X_eq, ← Y_eq]
+    intro a
+    rw [← mem_list_iff_mem_mk, ← mem_list_iff_mem_mk]
+    simp only [Finset.eq] at lk_eq
+    specialize lk_eq a; exact lk_eq
 
 def Finset.BEq [DecidableEq α] : Finset α -> Finset α -> Bool :=
   Quotient.lift₂
@@ -231,37 +281,22 @@ def Finset.BEq [DecidableEq α] : Finset α -> Finset α -> Bool :=
       grind
     )
 
-instance [DecidableEq α] : BEq (Finset α) where
-  beq X Y := Finset.BEq X Y
+/-instance [DecidableEq α] : BEq (Finset α) where
+  beq X Y := Finset.BEq X Y -/
 
+instance [DecidableEq α] : BEq (Finset α) where
+  beq X Y := decide (X = Y)
 
 #check Quot.liftBeta
-
-theorem test [DecidableEq α] (x y : Finset' α) : Finset.eq x y → Finset.mk x == Finset.mk y := by
-  intro eq
-  have perm := Finset.perm_if_eq x y eq
-  have aux : decide (x.removeDups.Perm y.removeDups) = true := by
-    simp only [decide_eq_true_eq]
-    apply Finset.perm_if_eq; exact eq
-  simp only [BEq.beq, Finset.BEq]
-
-  sorry
-
-
 
 instance [DecidableEq α] : LawfulBEq (Finset α) where
   rfl := by
     intro X
-    simp only [BEq.beq, Finset.BEq]
-
-    sorry
+    simp only [BEq.rfl]
   eq_of_beq := by
     intro X Y beq
-    apply (ext_iff X Y).mpr
-    intro a
-    simp only [BEq.beq, Finset.BEq] at beq
-
-    sorry
+    simp only [BEq.beq, decide_eq_true_eq] at beq
+    exact beq
 
 theorem Finset.empty_eq (A : Finset α) : (∀ (x : α), ¬x ∈ A) → A = ∅ := by
   intro h
@@ -270,7 +305,7 @@ theorem Finset.empty_eq (A : Finset α) : (∀ (x : α), ¬x ∈ A) → A = ∅ 
   simp only [EmptyCollection.emptyCollection]
   constructor
   . intro e_mem
-    rw [← mem_finset_iff_mem_mk]
+    rw [← mem_list_iff_mem_mk]
     specialize h a
     contradiction
   . intro e_mem
@@ -284,9 +319,6 @@ theorem Finset.ne_empty_contains_element (B : Finset α) [DecidableEq α] [ReflB
   rw [not_exists] at contra
   have aux := Finset.empty_eq B contra
   rw [aux] at neq
-
   have aux2 := beq_self_eq_true B
   rw [aux] at aux2
-  --simp only [bne_self_eq_false, Bool.false_eq_true] at neq
-
-  sorry
+  simp only [bne_self_eq_false, Bool.false_eq_true] at neq
