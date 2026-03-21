@@ -356,4 +356,24 @@ instance [T : Fintype α] [DecidableEq α] : Fintype (Powertype' α) where
         apply mem_list_iff_mem_mk
       grind
 
+instance [T : Fintype α] [DecidableEq α] : Fintype (Finset α) where
+  elems := (T.elems.power_upto T.elems.length).map (fun x => Finset.mk x)
+  complete := by
+    intro S
+    simp only [List.mem_map]
+    exists T.elems.filter (fun x => decide (x ∈ S))
+    constructor
+    . have length : (T.elems.filter (fun x => decide (x ∈ S))).length ≤ T.elems.length := by apply List.length_filter_le
+      exact powerlist T (T.elems.filter (fun x => decide (x ∈ S))) length
+    . apply (ext_iff (Finset.mk (T.elems.filter (fun x => decide (x ∈ S)))) S).mpr
+      intro a
+      have mem_iff : ∀ a, a ∈ (T.elems.filter (fun x => decide (x ∈ S))) ↔ a ∈ S := by
+        intro a
+        simp only [List.mem_filter, decide_eq_true_eq, and_iff_right_iff_imp]
+        intro a_mem
+        exact T.complete a
+      have mem_mk : ∀ a, a ∈ (T.elems.filter (fun x => decide (x ∈ S))) ↔ a ∈ (Finset.mk (T.elems.filter (fun x => decide (x ∈ S)))) := by
+        apply mem_list_iff_mem_mk
+      grind
+
 --instance [T : Fintype α] [DecidableEq α] : DecidableEq (Powertype' α) :=

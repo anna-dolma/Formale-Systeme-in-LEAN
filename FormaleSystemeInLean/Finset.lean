@@ -287,8 +287,6 @@ def Finset.BEq [DecidableEq α] : Finset α -> Finset α -> Bool :=
 instance [DecidableEq α] : BEq (Finset α) where
   beq X Y := decide (X = Y)
 
-#check Quot.liftBeta
-
 instance [DecidableEq α] : LawfulBEq (Finset α) where
   rfl := by
     intro X
@@ -322,3 +320,41 @@ theorem Finset.ne_empty_contains_element (B : Finset α) [DecidableEq α] [ReflB
   have aux2 := beq_self_eq_true B
   rw [aux] at aux2
   simp only [bne_self_eq_false, Bool.false_eq_true] at neq
+
+def Finset.toSet (S : Finset α) : Set α := fun x => x ∈ S
+
+theorem Finset.mem_toSet (S : Finset α) : ∀ x, x ∈ S ↔ x ∈ S.toSet := by
+  intro x
+  constructor
+  . intro x_mem; unfold Finset.toSet; simp only [Membership.mem]; exact x_mem
+  . intro x_mem; unfold Finset.toSet at x_mem; simp only [Membership.mem] at x_mem; exact x_mem
+
+theorem Quotient.unlift₂.{uA, uB, uC} {α : Sort uA} {β : Sort uB} {φ : Sort uC} {s₁ : Setoid α} {s₂ : Setoid β} (f : α → β → φ)
+  (c : ∀ (a₁ : α) (b₁ : β) (a₂ : α) (b₂ : β), a₁ ≈ a₂ → b₁ ≈ b₂ → f a₁ b₁ = f a₂ b₂) (a : α) (b : β) :
+  Quotient.lift₂ f c (Quotient.mk s₁ a) (Quotient.mk s₂ b) = f a b := rfl
+
+theorem Finset.inter_eq [DecidableEq α] (l k : Finset' α) : mk l ∩ mk k = mk (l.filter (fun x => decide (x ∈ k))) := by
+  rfl --- ich heule TT
+
+theorem Finset.mem_inter [DecidableEq α] (X Y : Finset α) (a : α) : a ∈ X ∩ Y ↔ a ∈ X ∧ a ∈ Y := by
+  have rep_X := Quot.exists_rep X
+  have rep_Y := Quot.exists_rep Y
+  rcases rep_X with ⟨l, X_eq⟩
+  rcases rep_Y with ⟨k, Y_eq⟩
+  have := inter_eq l k
+  rw [← X_eq, ← Y_eq]
+  constructor
+  . intro a_mem
+    change a ∈ (mk l ∩ mk k) at a_mem
+    rw [inter_eq l k, ← mem_list_iff_mem_mk, List.mem_filter] at a_mem
+    rcases a_mem with ⟨mem_l, dec_t⟩
+    simp at dec_t
+    constructor
+    . exact mem_l
+    . exact dec_t
+  . intro a_mem
+    change a ∈ (mk l ∩ mk k)
+    rw [inter_eq, ← mem_list_iff_mem_mk, List.mem_filter, decide_eq_true_eq]
+    change a ∈ mk l ∧ a ∈ mk k at a_mem
+    rw [← mem_list_iff_mem_mk, ← mem_list_iff_mem_mk] at a_mem
+    exact a_mem
