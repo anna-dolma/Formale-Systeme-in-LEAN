@@ -240,6 +240,7 @@ theorem Quotient.eq_iff_equiv {α : Sort u} {s : Setoid α} {a b : α} : a ≈ b
   . intro h; apply Quotient.sound; exact h
   . intro h; apply Quotient.exact; exact h
 
+-- "inspired" by mathlib :|
 instance decidableEq [DecidableEq α] : DecidableEq (Finset α)
   | a, b => Quotient.recOnSubsingleton₂ a b fun _ _ => decidable_of_iff _ Quotient.eq_iff_equiv
 
