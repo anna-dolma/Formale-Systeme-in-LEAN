@@ -298,7 +298,7 @@ end toDFA
 
 section toDFA_Finset
 
-def powerset_delta (M : NFA Q Sigma) [DecidableEq Q] [DecidableEq (Powertype' Q)] : Powertype' Q -> Sigma -> Powertype' Q :=
+def powerset_δ (M : NFA Q Sigma) [DecidableEq Q] [DecidableEq (Powertype' Q)] : Powertype' Q -> Sigma -> Powertype' Q :=
   Quotient.lift
     (fun R a => Finset.mk (R.flatMap (fun q => M.δ q a)))
     (by
@@ -328,44 +328,12 @@ def powerset_delta (M : NFA Q Sigma) [DecidableEq Q] [DecidableEq (Powertype' Q)
         )
 
   def NFA.to_TotalDFA' (M : NFA Q Sigma) [DecidableEq Q] [DecidableEq (Powertype' Q)] : TotalDFA (Powertype' Q) Sigma where
-  δ := fun R a => powerset_delta M R a --fun q => ∃ r ∈ R, q ∈ M.δ r a
+  δ := fun R a => powerset_δ M R a --fun q => ∃ r ∈ R, q ∈ M.δ r a
   q0 := Finset.mk M.Q0
   F := Fintype.elems.filter (fun x => (Finset.mk M.F) ∩ x != ∅)
 
-  theorem mem_powerset_δ_iff (M : NFA Q Sigma) (a : Sigma) (R : List Q) (q : Q) [DecidableEq Q] [DecidableEq (Finset Q)] : q ∈ M.δ_word R [a] ↔ q ∈ M.to_TotalDFA'.δ (Finset.mk R) a := by
-    simp only [NFA.to_TotalDFA', NFA.δ_word, powerset_delta]
-    have aux := mem_list_iff_mem_mk (List.flatMap (fun x => M.δ x a) R) q
-    simp only [aux]
-    have aux2 : ∀ x y, Finset.eq x y → Finset.mk (x.flatMap (fun q => M.δ q a)) = Finset.mk (y.flatMap (fun q => M.δ q a)) := by
-      intro x y eq
-      simp only [Finset.eq] at eq
-      apply Quot.sound
-      unfold Setoid.r Finset.instSetoid Finset.eq
-      simp only
-      intro s
-      rw [List.mem_flatMap]
-      constructor
-      . intro h
-        rcases h with ⟨t, t_mem, s_mem⟩
-        rw [List.mem_flatMap]
-        exists t
-        constructor
-        . apply (eq t).mp; exact t_mem
-        . exact s_mem
-      . rw [List.mem_flatMap]
-        intro h
-        rcases h with ⟨t, t_mem, s_mem⟩
-        exists t
-        constructor
-        . apply (eq t).mpr; exact t_mem
-        . exact s_mem
-    have aux3 := Quot.liftBeta (α := Finset' Q) (r := Finset.eq) (β := Finset Q) (f := (fun l => Finset.mk (l.flatMap (fun q => M.δ q a))))
-    specialize aux3 aux2
-    specialize aux3 R
-    rw [← aux3]
-    constructor
-    . intro h; exact h
-    . intro h; exact h
+  theorem mem_powerset_δ_iff (M : NFA Q Sigma) (a : Sigma) (R : List Q) (q : Q) [DecidableEq Q] [DecidableEq (Finset Q)] :
+    q ∈ M.δ_word R [a] ↔ q ∈ M.to_TotalDFA'.δ (Finset.mk R) a := by rfl
 
   theorem δ_NFA_eq_δ_TotalDFA' (M : NFA Q Sigma) (a : Sigma) (R : List Q) [DecidableEq Q] [DecidableEq (Finset Q)] : M.to_TotalDFA'.δ (Finset.mk R) a = Finset.mk (M.δ_word R [a]) := by
     apply (ext_iff (M.to_TotalDFA'.δ (Finset.mk R) a) (Finset.mk (M.δ_word R [a])) ).mpr
