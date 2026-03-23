@@ -57,6 +57,18 @@ theorem Finset.perm_if_eq [DecidableEq α] (l k : Finset' α) (eq : Finset.eq l 
   simp only [List.perm_iff_count]
   exact count_eq
 
+theorem Finset.eq_if_perm [DecidableEq α] (l k : Finset' α) (perm : l.removeDups.Perm k.removeDups) : Finset.eq l k := by
+  simp only [Finset.eq]
+  intro a
+  have aux := List.Perm.mem_iff (a := a) perm
+  rw [← List.mem_removeDups, ← List.mem_removeDups] at aux
+  exact aux
+
+theorem Finset.perm_iff_eq [DecidableEq α] (l k : Finset' α) : l.removeDups.Perm k.removeDups ↔ Finset.eq l k := by
+  constructor
+  . intro perm; exact eq_if_perm l k perm
+  . intro eq; exact perm_if_eq l k eq
+
 theorem Finset.length_eq_if_eq [DecidableEq α] (l k : Finset' α) (eq : Finset.eq l k) : l.removeDups.length = k.removeDups.length := by
   have perm := Finset.perm_if_eq l k eq
   apply List.Perm.length_eq
@@ -205,85 +217,24 @@ theorem Finset.eq_rfl (X : Finset α) : X = X := by
   apply (ext_iff X X).mpr
   simp only [implies_true]
 
-def l1 := [1, 2, 3, 4, 5]
-def l2 := [3, 4, 5, 6, 7]
-#eval l1.removeAll (l1.removeAll l2)
-#check Quotient.exact
+instance Finset.eq.decidable [DecidableEq α] (l k : Finset' α) : Decidable (Finset.eq l k) :=
+  -- FIXME: Dunno why this is not inferered automatically...
+  have : DecidableRel List.Subset := @List.instDecidableRelSubsetOfDecidableEq α _
 
-theorem eq_if_perm [DecidableEq α] (l k : Finset' α) (perm : l.removeDups.Perm k.removeDups) : Finset.eq l k := by
-  simp only [Finset.eq]
-  intro a
-  have aux := List.Perm.mem_iff (a := a) perm
-  rw [← List.mem_removeDups, ← List.mem_removeDups] at aux
-  exact aux
+  if sub1 : List.Subset l k
+  then if sub2 : List.Subset k l
+    then isTrue (by intro e; constructor; apply sub1; apply sub2)
+    else isFalse (by intro contra; apply sub2; intro e; rw [contra]; simp)
+  else isFalse (by intro contra; apply sub1; intro e; rw [contra]; simp)
 
-theorem Finset.perm_iff_eq [DecidableEq α] (l k : Finset' α) : l.removeDups.Perm k.removeDups ↔ Finset.eq l k := by
-  constructor
-  . intro perm; exact eq_if_perm l k perm
-  . intro eq; exact perm_if_eq l k eq
+instance [DecidableEq α] (l k : Finset' α) : Decidable (l ≈ k) := Finset.eq.decidable l k
 
-instance [DecidableEq α] (l k : Finset' α) : Decidable (Finset.eq l k) := by
-  rw [← Finset.perm_iff_eq]
-  by_cases h : (List.removeDups l).Perm (List.removeDups k)
-  . apply isTrue h
-  . apply isFalse h
-
-instance [DecidableEq α] (l k : Finset' α) : Decidable (l ≈ k) := by
-  simp only [HasEquiv.Equiv, Setoid.r]
-  rw [← Finset.perm_iff_eq]
-  by_cases h : (List.removeDups l).Perm (List.removeDups k)
-  . apply isTrue h
-  . apply isFalse h
-
-theorem Quotient.eq_iff_equiv {α : Sort u} {s : Setoid α} {a b : α} : a ≈ b ↔ Quotient.mk s a = Quotient.mk s b := by
-  constructor
-  . intro h; apply Quotient.sound; exact h
-  . intro h; apply Quotient.exact; exact h
-
--- "inspired" by mathlib :|
-instance decidableEq [DecidableEq α] : DecidableEq (Finset α)
-  | a, b => Quotient.recOnSubsingleton₂ a b fun _ _ => decidable_of_iff _ Quotient.eq_iff_equiv
-
-theorem Finset.eq_iff_exists_eq_rep [DecidableEq α] (X Y : Finset α) : X = Y ↔ ∃ (l k : Finset' α), Finset.mk l = X ∧ Finset.mk k = Y ∧ Finset.eq l k := by
-  have rep_X := Quot.exists_rep X
-  have rep_Y := Quot.exists_rep Y
-  rcases rep_X with ⟨l, X_eq⟩
-  rcases rep_Y with ⟨k, Y_eq⟩
-  constructor
-  . intro eq
-    rw [ext_iff] at eq
-    exists l, k
-    constructor
-    . exact X_eq
-    . constructor
-      . exact Y_eq
-      . rw [← X_eq, ← Y_eq] at eq
-        unfold Finset.eq
-        intro a
-        specialize eq a
-        rw [mem_list_iff_mem_mk, mem_list_iff_mem_mk]
-        exact eq
-  . intro h
-    rcases h with ⟨l, k, X_eq, Y_eq, lk_eq⟩
-    rw [ext_iff, ← X_eq, ← Y_eq]
-    intro a
-    rw [← mem_list_iff_mem_mk, ← mem_list_iff_mem_mk]
-    simp only [Finset.eq] at lk_eq
-    specialize lk_eq a; exact lk_eq
-
-def Finset.BEq [DecidableEq α] : Finset α -> Finset α -> Bool :=
-  Quotient.lift₂
-    (fun x y => decide (x.removeDups.Perm y.removeDups))
-    (by
-      intro v w x y eq_vx eq_wy
-      simp only [decide_eq_decide]
-      have perm_1 := perm_if_eq v x eq_vx
-      have perm_2 := perm_if_eq w y eq_wy
-      grind
-    )
-
-/-instance [DecidableEq α] : BEq (Finset α) where
-  beq X Y := Finset.BEq X Y -/
+-- "inspired" by mathlib :| -- not so much anymore now (but in spirit still the same idea)
+instance [DecidableEq α] : DecidableEq (Finset α)
+  | a, b => Quotient.recOnSubsingleton₂ a b fun repr_a repr_b =>
+    if eq : repr_a ≈ repr_b
+    then isTrue (Quotient.sound eq)
+    else isFalse (by intro contra; apply eq; apply Quotient.exact; exact contra)
 
 instance [DecidableEq α] : BEq (Finset α) where
   beq X Y := decide (X = Y)

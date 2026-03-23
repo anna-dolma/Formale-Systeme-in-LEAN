@@ -328,7 +328,7 @@ def powerset_δ (M : NFA Q Sigma) [DecidableEq Q] [DecidableEq (Powertype' Q)] :
         )
 
   def NFA.to_TotalDFA' (M : NFA Q Sigma) [DecidableEq Q] [DecidableEq (Powertype' Q)] : TotalDFA (Powertype' Q) Sigma where
-  δ := fun R a => powerset_δ M R a --fun q => ∃ r ∈ R, q ∈ M.δ r a
+  δ := fun R a => powerset_δ M R a
   q0 := Finset.mk M.Q0
   F := Fintype.elems.filter (fun x => (Finset.mk M.F) ∩ x != ∅)
 

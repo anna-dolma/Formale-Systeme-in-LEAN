@@ -16,7 +16,7 @@ The elements of Sigma could be anything: unicode characters, numbers, strings...
 The only restriction we make is assuming that, given two alphabet symbols of type Sigma,
 we can decide wether they are equal or not. Otherwise it would be impossible to compare words.
 -/
-variable {Sigma : Type u} [DecidableEq Sigma]
+variable {Sigma : Type u} --[DecidableEq Sigma]
 
 /-- Words are merely lists over some alphabet Sigma. -/
 abbrev Word (Sigma : Type u) := List Sigma
@@ -25,7 +25,7 @@ abbrev Word (Sigma : Type u) := List Sigma
 instance : Mul (Word Sigma) where
   mul u v := List.append u v
 
-omit [DecidableEq Sigma] in theorem Word.mul_eq (u v : Word Sigma) : u * v = u++v := by
+theorem Word.mul_eq (u v : Word Sigma) : u * v = u++v := by
   trivial
 
 /-- Concatenation of words is associative. -/
@@ -319,6 +319,7 @@ theorem pow_as_concat (L : Language Sigma) : n > 0 → L^n = L * L^(n-1) := by
       . exact p_mem
       . exists q
 
+
 /-!
 In some cases, it makes sense to think about the kleene star of some language L as the language
 containing words consisting of a list of words from L. We can prove that this is equivalent to our original definition.
@@ -441,17 +442,17 @@ theorem add_exp [BEq Sigma] (L : Language Sigma) (m n : Nat) : (L^n) * L^m = L^(
     rw [Language.mem_pow]
     exists l_v*l_u
     constructor
-    . rw [mul_eq_append]
+    . rw [Word.mul_eq]
       subst w v u
       rw [List.flatten_append]
       rfl
     . constructor
-      . rw [mul_eq_append]
+      . rw [Word.mul_eq]
         rw [List.length_append]
         subst v_length u_length
         rfl
       . intro x x_mem
-        rw [mul_eq_append] at x_mem
+        rw [Word.mul_eq] at x_mem
         have x_mem_l : ∀ (u : Word Sigma), u ∈ l_v++l_u → u ∈ L := by
           intro y y_mem
           rw [List.mem_append] at y_mem
@@ -489,52 +490,13 @@ theorem add_exp [BEq Sigma] (L : Language Sigma) (m n : Nat) : (L^n) * L^m = L^(
               apply List.mem_of_mem_drop mem_drop
             apply b z z_mem_l
       . subst w
-        rw [mul_eq_append]
+        rw [Word.mul_eq]
         rw [← List.flatten_append]
         apply congrArg
         simp only [List.extract_eq_drop_take]
         rw [← List.length_drop]
         conv => right; right; rw [List.take_length]
         rw [List.take_append_drop]
-
-/--
-Using the two previous results first_power and add_exp, we can show that when writing the nth power of a language L
-as the concatenation of L with L^(-1) the order does not matter.
--/
-theorem pow_as_concat_comm (L : Language Sigma) (n : Nat) : L * L^(n-1) = (L^(n-1)) * L := by
-  rw (occs := [1, 4]) [← first_power L]
-  rw [add_exp L 1 (n-1)]
-  rw [add_exp L (n-1) 1, Nat.add_comm]
-
-theorem kstar_plus (L : Language Sigma) : L⁺ = L* * L := by
-  apply Set.ext
-  intro w
-  constructor
-  . intro w_mem
-    rcases w_mem with ⟨n, gt, w_mem⟩
-    rw [pow_as_concat] at w_mem
-    . rw [pow_as_concat_comm] at w_mem
-      rcases w_mem with ⟨u, u_mem, v, v_mem, w_eq⟩
-      exists u
-      constructor
-      . unfold Language.kstar
-        simp only [Membership.mem]
-        exists (n-1)
-      . exists v
-    . exact gt
-  . intro w_mem
-    rcases w_mem with ⟨u, u_mem, v, v_mem, w_eq⟩
-    rcases u_mem with ⟨n, u_mem⟩
-    unfold Language.plus
-    simp only [Membership.mem]
-    exists (n+1)
-    constructor
-    . simp only [gt_iff_lt, Nat.zero_lt_succ]
-    . rw [← add_exp L, first_power]
-      exists u
-      constructor
-      . exact u_mem
-      . exists v
 
 /-- concatenation of languages is distributive over union (right side) -/
 theorem distr_concat_union_l (L₁ L₂ L₃ : Language Sigma) : (L₁ ∪ L₂) * L₃ = (L₁ * L₃) ∪ (L₂ * L₃) := by
@@ -680,19 +642,6 @@ theorem mul_empty : ∀ (L : Language Sigma), L * L_empty = L_empty := by
   rcases h with ⟨u, u_mem, v, v_mem, h⟩
   contradiction
 
-/-- All powers of ∅ (except ∅⁰) are ∅. -/
-theorem succ_pow_empty : ∀ n, n > 0 → Language.pow L_empty n = @L_empty Sigma := by
-  intro n n₁
-  unfold Language.pow
-  cases n₁ with
-  | refl =>
-    simp
-    unfold L_empty
-    apply empty_mul
-  | step =>
-    simp
-    apply empty_mul
-
 /-- The kleene closure of a language is the same as applying the plus operator and adding the empty word. -/
 theorem kstar_eq_plus_union_eps (L : Language Sigma) : L* = L⁺ ∪ L_eps := by
   apply Set.ext
@@ -715,6 +664,60 @@ theorem kstar_eq_plus_union_eps (L : Language Sigma) : L* = L⁺ ∪ L_eps := by
     rcases w_mem with ⟨n, gtz, w_mem⟩
     . exists n
     . exists 0
+
+/-- All powers of ∅ (except ∅⁰) are ∅. -/
+theorem succ_pow_empty : ∀ n, n > 0 → Language.pow L_empty n = @L_empty Sigma := by
+  intro n n₁
+  unfold Language.pow
+  cases n₁ with
+  | refl =>
+    simp
+    unfold L_empty
+    apply empty_mul
+  | step =>
+    simp
+    apply empty_mul
+
+variable [DecidableEq Sigma]
+
+/--
+Using the two previous results first_power and add_exp, we can show that when writing the nth power of a language L
+as the concatenation of L with L^(-1) the order does not matter.
+-/
+theorem pow_as_concat_comm (L : Language Sigma) (n : Nat) : L * L^(n-1) = (L^(n-1)) * L := by
+  rw (occs := [1, 4]) [← first_power L]
+  rw [add_exp L 1 (n-1)]
+  rw [add_exp L (n-1) 1, Nat.add_comm]
+
+theorem kstar_plus (L : Language Sigma) : L⁺ = L* * L := by
+  apply Set.ext
+  intro w
+  constructor
+  . intro w_mem
+    rcases w_mem with ⟨n, gt, w_mem⟩
+    rw [pow_as_concat] at w_mem
+    . rw [pow_as_concat_comm] at w_mem
+      rcases w_mem with ⟨u, u_mem, v, v_mem, w_eq⟩
+      exists u
+      constructor
+      . unfold Language.kstar
+        simp only [Membership.mem]
+        exists (n-1)
+      . exists v
+    . exact gt
+  . intro w_mem
+    rcases w_mem with ⟨u, u_mem, v, v_mem, w_eq⟩
+    rcases u_mem with ⟨n, u_mem⟩
+    unfold Language.plus
+    simp only [Membership.mem]
+    exists (n+1)
+    constructor
+    . simp only [gt_iff_lt, Nat.zero_lt_succ]
+    . rw [← add_exp L, first_power]
+      exists u
+      constructor
+      . exact u_mem
+      . exists v
 
 /-- Removing the empty word from a language L does not change L*. -/
 theorem kstar_eq_L_minus_eps (L : Language Sigma) : L* = (L\L_eps)* := by
