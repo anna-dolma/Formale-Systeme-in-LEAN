@@ -1,6 +1,4 @@
 import FormaleSystemeInLean.Lecture4
-import FormaleSystemeInLean.FintypeSetDecidableEq
-
 
 /-!
 This file contains the formalisation of exercise 2.3 c and d which deals with simulations between NFAs.
@@ -61,14 +59,6 @@ section Exercise3
 
     deriving instance Fintype, DecidableEq for Q, ⅀
 
-    instance : Fintype (Set Q) := inferInstance
-
-    instance : Inter (Powertype Q) where
-      inter A B := fun e => e ∈ A ∧ e ∈ B
-
-    --variable {h : ∀ (S : Set Q), DecidablePred S}
-    variable [DecidableEq (Set Q)]
-
     /--
     Finally we can define the NFA 𝓜.
     -/
@@ -91,21 +81,21 @@ section Exercise3
     Simulations are defined for NFAs so we convert 𝓜' back into an NFA 𝓜''.
     -/
 
-
-    def 𝓜' : TotalDFA (Powertype Q) ⅀ := 𝓜.to_TotalDFA
-    def 𝓜'' : NFA (Powertype Q) ⅀ := 𝓜'.to_NFA
+    def 𝓜_total : TotalDFA (Powertype Q) ⅀ := 𝓜.to_TotalDFA
+    def 𝓜_total' : NFA (Powertype Q) ⅀ := 𝓜_total.to_NFA
 
     theorem part_b : ∃ (nfa1 : NFA (Powertype Q) ⅀) (nfa2 : NFA Q ⅀), nfa1.Language ⊆ nfa2.Language ∧ ¬∃ (_ : NFASimulation nfa1 nfa2), True := by
-      exists 𝓜'', 𝓜
+      exists 𝓜_total', 𝓜
       constructor
       . intro w w_mem
         have lang_eq1 : 𝓜.to_TotalDFA.Language = 𝓜.Language := by
           apply NFA_totalDFA_lang_eq 𝓜
-        have lang_eq2 : 𝓜''.Language = 𝓜'.Language := by
-          unfold 𝓜''
-          apply totalDFA_NFA_lang_eq 𝓜'
-        unfold 𝓜'' 𝓜' at *
-        rw [← lang_eq2] at lang_eq1
+        have lang_eq2 : 𝓜_total.Language = 𝓜_total'.Language := by
+          unfold 𝓜_total'
+          symm
+          apply totalDFA_NFA_lang_eq 𝓜_total
+        unfold 𝓜_total' 𝓜_total at *
+        rw [lang_eq2] at lang_eq1
         rw [← lang_eq1]
         exact w_mem
       . intro sim
@@ -113,14 +103,14 @@ section Exercise3
         let q0 : Q := ⟨"q0", by simp only [statesList]; grind⟩
         let q1 : Q := ⟨"q1", by simp only [statesList]; grind⟩
         let q2 : Q := ⟨"q2", by simp only [statesList]; grind⟩
-        let Q0 : Set Q := fun q => q = q0
+        let Q0 : Finset Q := Finset.mk [q0]
         let b : ⅀ := ⟨'b', by simp only [sigma]; grind⟩
 
         rcases sim with ⟨sim, _⟩
         rcases sim with ⟨sim, start, step, final⟩
 
-        have q01_mem : Q0 ∈ 𝓜''.Q0 := by
-          unfold Q0 q0 𝓜'' TotalDFA.to_NFA 𝓜' 𝓜 NFA.to_TotalDFA List.toSet
+        have q01_mem : Q0 ∈ 𝓜_total'.Q0 := by
+          unfold Q0 q0 𝓜_total' TotalDFA.to_NFA 𝓜_total 𝓜 NFA.to_TotalDFA
           simp
         have q02_mem : q0 ∈ 𝓜.Q0 := by unfold q0 𝓜; simp
         have q02_eq : 𝓜.Q0 = [q0] := by unfold q0 𝓜; simp
@@ -132,39 +122,33 @@ section Exercise3
           rw [q02_mem'] at mem_sim
           exact mem_sim
 
-        have delta'_q0_eq : 𝓜''.δ Q0 b = [(fun q => q = q1 ∨ q = q2)] := by
-          unfold Q0 q0 q1 q2 b 𝓜'' TotalDFA.to_NFA 𝓜' 𝓜 NFA.to_TotalDFA List.toSet
-          simp
-          apply Set.ext
-          intro x
-          constructor
-          . intro hr
-            rcases hr with ⟨r, r_mem, x_mem⟩
-            simp only [Membership.mem] at r_mem
-            simp only [r_mem] at x_mem
-            simp at x_mem
-            exact x_mem
-          . intro x_eq
-            exists q0
-            constructor
-            . simp only [q0, Membership.mem]
-            . simp [q0]
-              exact x_eq
-
         have delta_q0_eq : 𝓜.δ q0 b = [q1, q2] := by unfold b q0 q1 q2; simp only [𝓜]
 
-        have mem_step : sim ((fun q => q = q1 ∨ q = q2), q2) := by
+        have delta'_q0_eq : 𝓜_total'.δ Q0 b = [Finset.mk [q1, q2]] := by
+          unfold 𝓜_total' TotalDFA.to_NFA
+          simp only [List.cons.injEq, and_true]
+          apply Finset.ext
+          intro q
+          unfold 𝓜_total Q0
+          rw [δ_NFA_eq_δ_TotalDFA, ← mem_list_iff_mem_mk, ← mem_list_iff_mem_mk]
+          unfold NFA.δ_word
+          simp only [List.flatMap_cons, List.flatMap_nil, List.append_nil, List.mem_cons, List.not_mem_nil]
+          rw [delta_q0_eq]
+          unfold NFA.δ_word
+          grind
+
+        have mem_step : sim (Finset.mk [q1,q2], q2) := by
           have aux := step (a := b) start_mem
-          have mem_delta : (fun q => q = q1 ∨ q = q2) ∈ 𝓜''.δ Q0 b := by grind
-          specialize aux (fun q => q = q1 ∨ q = q2)
+          have mem_delta : Finset.mk [q1,q2] ∈ 𝓜_total'.δ Q0 b := by grind
+          specialize aux (Finset.mk [q1,q2])
           have aux2 := aux mem_delta
           rcases aux2 with ⟨r, r_mem, mem_sim⟩
           rw [delta_q0_eq] at r_mem
 
-          have nmem_q1 : ¬sim ((fun q => q = q1 ∨ q = q2), q1) := by
+          have nmem_q1 : ¬sim (Finset.mk [q1,q2], q1) := by
             intro contra
-            have mem_F : (fun q => q = q1 ∨ q = q2) ∈ 𝓜''.F := by
-              simp only [q1, q2, 𝓜'', TotalDFA.to_NFA, 𝓜', NFA.to_TotalDFA, List.mem_filter, Fintype.elems, List.mem_map]
+            have mem_F : Finset.mk [q1,q2] ∈ 𝓜_total'.F := by
+              simp only [q1, q2, 𝓜_total', TotalDFA.to_NFA, 𝓜_total, NFA.to_TotalDFA, List.mem_filter, Fintype.elems, List.mem_map]
               constructor
               . exists [q1, q2]
                 constructor
@@ -173,33 +157,30 @@ section Exercise3
                   have : statesList.attach = Fintype.elems (α := Q) := rfl
                   rw [← this]
                   simp [statesList]
-                . unfold q1 q2 List.toSet
+                . unfold q1 q2
                   simp
-              . unfold 𝓜 List.toSet
+              . unfold 𝓜
                 simp
                 intro contra'
-                let X : (Powertype Q) := (fun e => e = q2)
-                let Y : (Powertype Q) := fun q => q = q1 ∨ q = q2
-                have inter : X ∩ Y = (fun q => q = q2) := by
-                  apply Set.ext
+                let X := Finset.mk [q2]
+                let Y := Finset.mk [q1, q2]
+                have inter : X ∩ Y = Finset.mk [q2] := by
+                  apply Finset.ext
                   intro t
                   constructor
                   . intro t_mem
+                    rw [Finset.mem_inter] at t_mem
                     rcases t_mem with ⟨l, r⟩
                     simp only [X, Y, Membership.mem] at *
                     grind
                   . intro t_mem
-                    simp only [Membership.mem] at t_mem
+                    rw [← mem_list_iff_mem_mk] at t_mem
+                    rw [Finset.mem_inter]
                     constructor
-                    . simp only [X, Membership.mem]; exact t_mem
-                    . simp only [Y, Membership.mem]; apply Or.inr; exact t_mem
+                    . unfold X; rw [← mem_list_iff_mem_mk]; exact t_mem
+                    . unfold Y; rw [← mem_list_iff_mem_mk]; grind
                 simp only [X, Y] at inter
-                rw [Set.empty_iff] at contra'
-                have nmem := contra' q2
-                have mem : q2 ∈ X ∩ Y := by
-                  simp only [X, Y, inter]
-                  simp only [Membership.mem]
-                simp only [X, Y] at mem
+                rw [contra'] at inter
                 contradiction
 
             have aux3 := final contra mem_F
@@ -223,32 +204,20 @@ section Exercise3
           simp only [q2, 𝓜] at r_mem
           simp_all
 
-        have delta'_q1_q2 : (fun q => q = q0 ∨ q = q2) ∈ 𝓜''.δ (fun q => q = q1 ∨ q = q2) b := by
-          simp only [q0, q1, q2, b, 𝓜'', TotalDFA.to_NFA, 𝓜', NFA.to_TotalDFA, 𝓜]
-          simp
-          apply Set.ext
-          intro q
-          constructor
-          . intro q_mem
-            exists q1
-            constructor
-            . apply Or.inl; rfl
-            . cases q_mem with
-              | inl q_mem =>
-                simp [q1, q_mem]
-              | inr q_mem =>
-                simp [q1, q_mem]
-          . intro q_mem
-            rcases q_mem with ⟨r, r_mem, q_mem⟩
-            cases r_mem with
-            | inl r_mem =>
-              simp only [r_mem, List.mem_cons, List.not_mem_nil, or_false] at q_mem
-              simp only [Membership.mem]
-              exact q_mem
-            | inr r_mem =>
-              simp [r_mem] at q_mem
+        have delta'_q1_q2 : Finset.mk [q0, q2] ∈ 𝓜_total'.δ (Finset.mk [q1, q2]) b := by
+          unfold 𝓜_total'
+          rw [totalDFA_NFA_δ_eq]
+          unfold 𝓜_total
+          rw [δ_NFA_eq_δ_TotalDFA]
+          apply congrArg
+          unfold NFA.δ_word
+          simp only [List.flatMap_cons, List.flatMap_nil, List.append_nil]
+          have δ_q1 : 𝓜.δ q1 b = [q0, q2] := by simp only [q1, q2, q0, b, 𝓜]
+          have δ_q2 : 𝓜.δ q2 b = [] := by simp only [𝓜]; grind
+          rw [δ_q1, δ_q2]
+          rfl
 
-        have mem_step2 := step (a := b) mem_step (fun q => q = q0 ∨ q = q2) delta'_q1_q2
+        have mem_step2 := step (a := b) mem_step (Finset.mk [q0, q2]) delta'_q1_q2
         rcases mem_step2 with ⟨r, r_mem, mem_sim⟩
         specialize delta_undef b
         contradiction

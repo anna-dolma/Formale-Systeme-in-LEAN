@@ -144,21 +144,6 @@ def TotalDFA.to_NFA (M : TotalDFA Q Sigma) : NFA Q Sigma where
   F := M.F
 
 /-!
-Every NFA can be turned into a total DFA using the powerset construction.
-Since we defined the states Q as some type with a Fintype instance, computing the "powerset" of Q is a bit tricky.
-A Fintype is simply a type with finitely many elements. This can be expressed by requiring the existence of a list with all elements of Q.
-The Powertype of Q is the list of all possible subsets of this list. We use subsets instead of lists because the powertype needs to be finite.
-If you are interested in the details have a look at Powertype.lean. It is not required to understand the definitions and proofs concerning Powertype
-to understand the section toDFA.
--/
-
-/-- A function turning an NFA into a total DFA. -/
-def NFA.to_TotalDFA (M : NFA Q Sigma) [DecidableEq Q] [DecidableEq (Powertype Q)] : TotalDFA (Powertype Q) Sigma where
-  δ := fun R a => fun q => ∃ r ∈ R, q ∈ M.δ r a
-  q0 := M.Q0.toSet
-  F := Fintype.elems.filter (fun x => M.F.toSet ∩ x != ∅)
-
-/-!
 The following section deals with the conversion from DFA to NFA.
 We proceed in a similar manner as we did for the proof of totalDFA_eq_DFA in lecture3 by first showing that the transition functions of M and M.to_NFA are (almost) equal
 and then using this to prove the equality of M.Language and M.to_NFA.Language.
@@ -232,73 +217,18 @@ section toNFA
 
 end toNFA
 
+/-!
+Every NFA can be turned into a total DFA using the powerset construction.
+Since we defined the states Q as some type with a Fintype instance, computing the "powerset" of Q is a bit tricky.
+A Fintype is simply a type with finitely many elements. This can be expressed by requiring the existence of a list with all elements of Q.
+The Powertype of Q is the list of all possible subsets of this list. We use subsets instead of lists because the powertype needs to be finite.
+If you are interested in the details have a look at Powertype.lean. It is not required to understand the definitions and proofs concerning Powertype
+to understand the section toDFA.
+-/
+
 section toDFA
 
-  /--
-  The transition function M.δ coincides with M.to_TotalDFA.δ.
-  For the NFA we need to use δ_word on a word of just one symbol because δ for lists of states is only defined for words.
-  Since R and [a] are mapped to a list of states we need to apply List.toSet here.
-  -/
-  theorem δ_NFA_eq_δ_TotalDFA (M : NFA Q Sigma) (a : Sigma) (R : List Q) [DecidableEq Q] [DecidableEq (Set Q)] : M.to_TotalDFA.δ R.toSet a = (M.δ_word R [a]).toSet := by
-    simp only [NFA.to_TotalDFA, NFA.δ_word]
-    unfold List.toSet
-    apply funext
-    intro q
-    rw [List.mem_flatMap]
-    rfl
-
-  /--
-  The transition function M.δ_word coincides with M.to_TotalDFA.δ_word.
-  -/
-  theorem δ_word_eq_DFA_NFA (M : NFA Q Sigma) (w : Word Sigma) (R : List Q) [DecidableEq Q] [DecidableEq (Powertype Q)] : (M.δ_word R w).toSet = M.to_TotalDFA.δ_word R.toSet w := by
-    apply Set.ext
-    intro q
-    induction w generalizing q R with
-    | nil =>
-      grind
-    | cons a v ih =>
-      simp only [NFA.δ_word]
-      have aux := ih (List.flatMap (fun x => M.δ x a) R) q
-      simp only [TotalDFA.δ_word]
-      rw [δ_NFA_eq_δ_TotalDFA]
-      unfold List.toSet at *
-      simp only [Membership.mem] at *
-      grind
-
-  theorem NFA_totalDFA_lang_eq (M : NFA Q Sigma) [DecidableEq Q] [DecidableEq (Set Q)] : M.to_TotalDFA.Language = M.Language := by
-    apply Set.ext
-    intro w
-    unfold TotalDFA.Language
-    rw [acc_run_iff_δ_word_contains_final]
-
-    have q0_eq : M.to_TotalDFA.q0 = M.Q0.toSet := rfl
-    have := δ_word_eq_DFA_NFA M w M.Q0
-    rw [Set.mem_iff]
-    rw [q0_eq, ← this]
-
-    simp only [NFA.to_TotalDFA]
-    rw [List.mem_filter]
-    constructor
-    . rintro ⟨_, h⟩
-      rcases Set.ne_empty_contains_element _ h with ⟨q, q_mem_f, q_mem_start⟩
-      exists q
-    . rintro ⟨q, q_mem_start, q_mem_f⟩
-      constructor
-      . apply Fintype.complete (α := Powertype Q)
-      . simp only [bne_iff_ne]
-        intro contra
-        have : q ∈ M.F.toSet ∩ (M.δ_word M.Q0 w).toSet := by
-          constructor
-          . exact q_mem_f
-          . exact q_mem_start
-        rw [contra] at this
-        simp [EmptyCollection.emptyCollection, Membership.mem] at this
-
-end toDFA
-
-section toDFA_Finset
-
-def powerset_δ (M : NFA Q Sigma) [DecidableEq Q] [DecidableEq (Powertype' Q)] : Powertype' Q -> Sigma -> Powertype' Q :=
+def powerset_δ (M : NFA Q Sigma) [DecidableEq Q] : Powertype Q -> Sigma -> Powertype Q :=
   Quotient.lift
     (fun R a => Finset.mk (R.flatMap (fun q => M.δ q a)))
     (by
@@ -327,21 +257,21 @@ def powerset_δ (M : NFA Q Sigma) [DecidableEq Q] [DecidableEq (Powertype' Q)] :
         . exact s_mem
         )
 
-  def NFA.to_TotalDFA' (M : NFA Q Sigma) [DecidableEq Q] [DecidableEq (Powertype' Q)] : TotalDFA (Powertype' Q) Sigma where
+  def NFA.to_TotalDFA (M : NFA Q Sigma) [DecidableEq Q] : TotalDFA (Powertype Q) Sigma where
   δ := fun R a => powerset_δ M R a
   q0 := Finset.mk M.Q0
   F := Fintype.elems.filter (fun x => (Finset.mk M.F) ∩ x != ∅)
 
-  theorem mem_powerset_δ_iff (M : NFA Q Sigma) (a : Sigma) (R : List Q) (q : Q) [DecidableEq Q] [DecidableEq (Finset Q)] :
-    q ∈ M.δ_word R [a] ↔ q ∈ M.to_TotalDFA'.δ (Finset.mk R) a := by rfl
+  theorem mem_powerset_δ_iff (M : NFA Q Sigma) (a : Sigma) (R : List Q) (q : Q) [DecidableEq Q] :
+    q ∈ M.δ_word R [a] ↔ q ∈ M.to_TotalDFA.δ (Finset.mk R) a := by rfl
 
-  theorem δ_NFA_eq_δ_TotalDFA' (M : NFA Q Sigma) (a : Sigma) (R : List Q) [DecidableEq Q] [DecidableEq (Finset Q)] : M.to_TotalDFA'.δ (Finset.mk R) a = Finset.mk (M.δ_word R [a]) := by
-    apply (ext_iff (M.to_TotalDFA'.δ (Finset.mk R) a) (Finset.mk (M.δ_word R [a])) ).mpr
+  theorem δ_NFA_eq_δ_TotalDFA (M : NFA Q Sigma) (a : Sigma) (R : List Q) [DecidableEq Q] : M.to_TotalDFA.δ (Finset.mk R) a = Finset.mk (M.δ_word R [a]) := by
+    apply Finset.ext
     intro q
     rw [← mem_list_iff_mem_mk]
     simp only [mem_powerset_δ_iff]
 
-  theorem δ_word_eq_DFA_NFA' (M : NFA Q Sigma) (w : Word Sigma) (R : List Q) [DecidableEq Q] [DecidableEq (Powertype' Q)] : ∀ q, q ∈ M.δ_word R w ↔ q ∈ M.to_TotalDFA'.δ_word (Finset.mk R) w := by
+  theorem δ_word_eq_DFA_NFA (M : NFA Q Sigma) (w : Word Sigma) (R : List Q) [DecidableEq Q] : ∀ q, q ∈ M.δ_word R w ↔ q ∈ M.to_TotalDFA.δ_word (Finset.mk R) w := by
   intro q
   induction w generalizing q R with
   | nil =>
@@ -351,18 +281,18 @@ def powerset_δ (M : NFA Q Sigma) [DecidableEq Q] [DecidableEq (Powertype' Q)] :
     have aux := ih (List.flatMap (fun x => M.δ x a) R)
     simp only [TotalDFA.δ_word]
     have aux2 := mem_powerset_δ_iff M a R q
-    rw [δ_NFA_eq_δ_TotalDFA']
+    rw [δ_NFA_eq_δ_TotalDFA]
     simp only [NFA.δ_word]
     grind
 
-  theorem NFA_totalDFA_lang_eq' (M : NFA Q Sigma) [DecidableEq Q] [DecidableEq (Powertype' Q)] [DecidableEq (Set Q)] : M.to_TotalDFA'.Language = M.Language := by
+  theorem NFA_totalDFA_lang_eq (M : NFA Q Sigma) [DecidableEq Q] : M.to_TotalDFA.Language = M.Language := by
     apply Set.ext
     intro w
     unfold TotalDFA.Language
     rw [acc_run_iff_δ_word_contains_final]
-    have q0_eq : M.to_TotalDFA'.q0 = Finset.mk M.Q0 := rfl
-    have F_eq : M.to_TotalDFA'.F = Fintype.elems.filter (fun x => (Finset.mk M.F) ∩ x != ∅) := rfl
-    have := δ_word_eq_DFA_NFA' M w M.Q0
+    have q0_eq : M.to_TotalDFA.q0 = Finset.mk M.Q0 := rfl
+    have F_eq : M.to_TotalDFA.F = Fintype.elems.filter (fun x => (Finset.mk M.F) ∩ x != ∅) := rfl
+    have := δ_word_eq_DFA_NFA M w M.Q0
     rw [Set.mem_iff, F_eq, List.mem_filter, q0_eq]
 
     constructor
@@ -382,7 +312,7 @@ def powerset_δ (M : NFA Q Sigma) [DecidableEq Q] [DecidableEq (Powertype' Q)] :
       . simp only [bne_iff_ne]
         rw [this] at q_mem_start
         intro contra
-        have : q ∈ Finset.mk M.F ∩ M.to_TotalDFA'.δ_word (Finset.mk M.Q0) w := by
+        have : q ∈ Finset.mk M.F ∩ M.to_TotalDFA.δ_word (Finset.mk M.Q0) w := by
           rw [Finset.mem_inter]
           constructor
           . rw [← mem_list_iff_mem_mk]; exact q_mem_f
@@ -390,4 +320,4 @@ def powerset_δ (M : NFA Q Sigma) [DecidableEq Q] [DecidableEq (Powertype' Q)] :
         rw [contra] at this
         simp [EmptyCollection.emptyCollection, ← mem_list_iff_mem_mk] at this
 
-end toDFA_Finset
+end toDFA

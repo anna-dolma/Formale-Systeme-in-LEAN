@@ -159,24 +159,20 @@ theorem mem_list_iff_mem_mk (l' : List α) : ∀ a, a ∈ l' ↔ a ∈ Finset.mk
   unfold Finset.eq
   simp only [Membership.mem, Finset.mem]
 
-theorem ext_iff (X Y : Finset α)  : X = Y ↔ (∀ a, a ∈ X ↔ a ∈ Y) := by
+@[ext]
+theorem Finset.ext (X Y : Finset α) : (∀ a, a ∈ X ↔ a ∈ Y) -> X = Y := by
   have exists_rep_X := Quot.exists_rep X
   have exists_rep_Y := Quot.exists_rep Y
   rcases exists_rep_X with ⟨l1, X_eq⟩
   rcases exists_rep_Y with ⟨l2, Y_eq⟩
   rw [← X_eq, ← Y_eq]
-  constructor
-  . intro eq
-    have finset_eq := Quotient.exact eq
-    simp only [HasEquiv.Equiv, Setoid.r, Finset.eq] at finset_eq
-    grind
-  . intro mem_iff
-    apply Quotient.sound
-    simp only [HasEquiv.Equiv, Setoid.r, Finset.eq]
-    intro a
-    rw [mem_list_iff_mem_mk l1, mem_list_iff_mem_mk l2]
-    specialize mem_iff a
-    exact mem_iff
+  intro mem_iff
+  apply Quotient.sound
+  simp only [HasEquiv.Equiv, Setoid.r, Finset.eq]
+  intro a
+  rw [mem_list_iff_mem_mk l1, mem_list_iff_mem_mk l2]
+  specialize mem_iff a
+  exact mem_iff
 
 instance [DecidableEq α] (x : α) (S : Finset α) : Decidable (x ∈ S) :=
   Quot.recOnSubsingleton S (fun l => List.instDecidableMemOfLawfulBEq x l)
@@ -185,7 +181,7 @@ instance [DecidableEq α] (l : Finset' α) (a : α) : Decidable (a ∈ l) := Lis
 
 def Finset.inter [DecidableEq α] : Finset α -> Finset α -> Finset α :=
   Quotient.lift₂
-    (fun x y => Finset.mk (x.filter (fun a => decide (a ∈ y)))) --(x.removeAll (x.removeAll y)))
+    (fun x y => Finset.mk (x.filter (fun a => decide (a ∈ y))))
     (by
       intro u v w x eq_uw eq_vx
       apply Quot.sound
@@ -214,7 +210,7 @@ instance [DecidableEq α] : Inter (Finset α) where
   inter A B := Finset.inter A B
 
 theorem Finset.eq_rfl (X : Finset α) : X = X := by
-  apply (ext_iff X X).mpr
+  apply Finset.ext
   simp only [implies_true]
 
 instance Finset.eq.decidable [DecidableEq α] (l k : Finset' α) : Decidable (Finset.eq l k) :=
@@ -229,28 +225,15 @@ instance Finset.eq.decidable [DecidableEq α] (l k : Finset' α) : Decidable (Fi
 
 instance [DecidableEq α] (l k : Finset' α) : Decidable (l ≈ k) := Finset.eq.decidable l k
 
--- "inspired" by mathlib :| -- not so much anymore now (but in spirit still the same idea)
 instance [DecidableEq α] : DecidableEq (Finset α)
   | a, b => Quotient.recOnSubsingleton₂ a b fun repr_a repr_b =>
     if eq : repr_a ≈ repr_b
     then isTrue (Quotient.sound eq)
     else isFalse (by intro contra; apply eq; apply Quotient.exact; exact contra)
 
-instance [DecidableEq α] : BEq (Finset α) where
-  beq X Y := decide (X = Y)
-
-instance [DecidableEq α] : LawfulBEq (Finset α) where
-  rfl := by
-    intro X
-    simp only [BEq.rfl]
-  eq_of_beq := by
-    intro X Y beq
-    simp only [BEq.beq, decide_eq_true_eq] at beq
-    exact beq
-
 theorem Finset.empty_eq (A : Finset α) : (∀ (x : α), ¬x ∈ A) → A = ∅ := by
   intro h
-  apply (ext_iff A ∅).mpr
+  apply Finset.ext
   intro a
   simp only [EmptyCollection.emptyCollection]
   constructor

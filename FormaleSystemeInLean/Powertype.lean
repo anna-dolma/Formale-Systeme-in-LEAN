@@ -9,11 +9,6 @@ We also need to prove that the resulting "powerlist" contains only finitely many
 because the states of an NFA have to be of a Fintype.
 -/
 
-def Powertype (α : Type u) := Set α
-
-instance : Membership α (Powertype α) where
-  mem S a := S a
-
 /--
 The powerset of a set X just contains all possible subsets of X. (See Set.lean)
 We define the power of a list l as the list containing all lists up to the length if l with elements from l.
@@ -210,142 +205,25 @@ theorem powerlist (T : Fintype α) (l : List α) : l.length ≤ T.elems.length -
       rw [List.length_cons]
       exact mem_power
 
-/-!
-Now the goal is a Fintype-instance for Powertype α, given an instance Fintype α, or to phrase it differently:
-the Powertype of something finite is again finite. Since we defined Powertype as a set, the elements of the
-resulting instance have to be sets. We can achieve this by mapping each element of the powerlist to a set.
-It remains to prove that every Set α is contained in the resulting list of sets.
--/
 
-/--
-If X is a subset of Y and there is a corresponding list for Y, then there must be a list for X as well.
-We need to assume that the predicate X is decidable here.
+/-! We use Finset instead of Set here because it enables easier proofs for (e.g.) DecidablePred (a ∈ X) and DecidableEq. -/
 
--/
-theorem list_of_subset (X Y : Set α) (h : ∃ (l' : List α), Y = l'.toSet) : X ⊆ Y → ∃ (l : List α), X = l.toSet := by
-  intro sub
-  rcases h with ⟨l', l'_eq⟩
-  exists (l'.filter (fun e =>
-      have := Classical.propDecidable (e ∈ X)
-      decide (e ∈ X)
-    ))
-  unfold List.toSet
-  simp
-  apply Set.ext
-  intro x
-  simp only [Membership.mem]
-  constructor
-  . intro x_mem
-    constructor
-    . have x_mem_Y := sub x x_mem
-      rw [l'_eq] at x_mem_Y
-      simp only [List.toSet, Membership.mem] at x_mem_Y
-      exact x_mem_Y
-    . exact x_mem
-  . intro x_mem
-    exact x_mem.right
+def Powertype (α : Type u) := Finset α
 
-/--
-If X is a subset of Y and the list for the superset Y has at most the length T.elems.length,
-then there is a list for X that is contained in the powerlist of T.elems.
-We need to assume that the predicate X is decidable here.
--/
-theorem mem_powerlist_of_subset (T : Fintype α) (X Y : Set α) (h : ∃ (l' : List α), Y = l'.toSet ∧ l'.length ≤ T.elems.length) : X ⊆ Y → ∃ (l : List α), X = l.toSet ∧ l ∈ (T.elems.power_upto T.elems.length)  := by
-  intro sub
-  rcases h with ⟨l', l'_eq, l'_length⟩
-  exists (l'.filter (fun e =>
-      have := Classical.propDecidable (e ∈ X)
-      decide (e ∈ X)
-    ))
-  unfold List.toSet
-  simp
-  constructor
-  . apply Set.ext
-    intro x
-    simp only [Membership.mem]
-    constructor
-    . intro x_mem
-      constructor
-      . have x_mem_Y := sub x x_mem
-        rw [l'_eq] at x_mem_Y
-        simp only [List.toSet, Membership.mem] at x_mem_Y
-        exact x_mem_Y
-      . exact x_mem
-    . intro x_mem
-      exact x_mem.right
-  . have l_length : (l'.filter (fun e => have := Classical.propDecidable (e ∈ X); decide (e ∈ X))).length ≤ T.elems.length := by
-      grind
-    exact powerlist T (l'.filter (fun e => have := Classical.propDecidable (e ∈ X); decide (e ∈ X))) l_length
-
-/--
-Given a Fintype T with elements of type α, every Set containing elements of type α has a list with the same elements.
-We can prove this with the help of list_of_subset because every Set α is a subset of T.elems.toSet.
-Then the list for the superset Y is just T.elems itself.
--/
-theorem list_of_fintype_set (T : Fintype α) (S : Set α) : ∃ (l : List α), S = l.toSet := by
-  have sub : S ⊆ Fintype.elems.toSet := by
-    intro x x_mem
-    simp only [List.toSet, Membership.mem]
-    exact T.complete x
-  have elems_list : ∃ (l : List α), T.elems.toSet = l.toSet := by exists T.elems
-  apply list_of_subset S T.elems.toSet elems_list sub
-
-/--
-For the typeclass instance we need a list for each Set α. This list also needs to be an element of T.elems.power_upto T.elems.length.
-We already know how to obtain the list (see previous theorem). Obviously the length of T.elems is at most T.elems.length.
-Then we can apply mem_powerlist_of_subset using T.elems.toSet as the superset Y and the set S
-(for which we want to prove the existence of a list contained in the powerlist) as the subset X.
--/
-theorem mem_powerlist_of_fintype_set (T : Fintype α) (S : Set α) : ∃ (l : List α), S = l.toSet ∧ l ∈ (T.elems.power_upto T.elems.length) := by
-  have sub : S ⊆ Fintype.elems.toSet := by
-    intro x x_mem
-    simp only [List.toSet, Membership.mem]
-    exact T.complete x
-  have elems_list : ∃ (l : List α), T.elems.toSet = l.toSet ∧ l.length ≤ T.elems.length := by
-    exists T.elems
-    constructor
-    . rfl
-    . rw [Nat.le_iff_lt_or_eq]
-      apply Or.inr; rfl
-  apply mem_powerlist_of_subset T S T.elems.toSet elems_list sub
-
-instance [T : Fintype α] [DecidableEq α] : Fintype (Powertype α) where
-  elems := (T.elems.power_upto T.elems.length).map (fun x => x.toSet)
-  complete := by
-    intro S
-    have exists_l := mem_powerlist_of_fintype_set T S
-    rcases exists_l with ⟨l, l_eq, l_mem⟩
-    rw [l_eq, List.mem_map]
-    exists l
-
-instance [T : Fintype α] [BEq α] : Fintype (Set α) where
-  elems := (T.elems.power_upto T.elems.length).map (fun x => x.toSet)
-  complete := by
-    intro S
-    have exists_l := mem_powerlist_of_fintype_set T S
-    rcases exists_l with ⟨l, l_eq, l_mem⟩
-    rw [l_eq, List.mem_map]
-    exists l
-
-
---------------------
-
-def Powertype' (α : Type u) := Finset α
-
-instance : Membership α (Powertype' α) where
+instance : Membership α (Powertype α) where
   mem S a := Finset.mem a S
 
-instance [T : Fintype α] [DecidableEq α] : Fintype (Powertype' α) where
+instance [T : Fintype α] [DecidableEq α] : Fintype (Powertype α) where
   elems := (T.elems.power_upto T.elems.length).map (fun x => Finset.mk x)
   complete := by
     intro S
     simp only [List.mem_map]
-    unfold Powertype' at S
+    unfold Powertype at S
     exists T.elems.filter (fun x => decide (x ∈ S))
     constructor
     . have length : (T.elems.filter (fun x => decide (x ∈ S))).length ≤ T.elems.length := by apply List.length_filter_le
       exact powerlist T (T.elems.filter (fun x => decide (x ∈ S))) length
-    . apply (ext_iff (Finset.mk (T.elems.filter (fun x => decide (x ∈ S)))) S).mpr
+    . apply Finset.ext
       intro a
       have mem_iff : ∀ a, a ∈ (T.elems.filter (fun x => decide (x ∈ S))) ↔ a ∈ S := by
         intro a
@@ -365,7 +243,7 @@ instance [T : Fintype α] [DecidableEq α] : Fintype (Finset α) where
     constructor
     . have length : (T.elems.filter (fun x => decide (x ∈ S))).length ≤ T.elems.length := by apply List.length_filter_le
       exact powerlist T (T.elems.filter (fun x => decide (x ∈ S))) length
-    . apply (ext_iff (Finset.mk (T.elems.filter (fun x => decide (x ∈ S)))) S).mpr
+    . apply Finset.ext
       intro a
       have mem_iff : ∀ a, a ∈ (T.elems.filter (fun x => decide (x ∈ S))) ↔ a ∈ S := by
         intro a
@@ -375,5 +253,3 @@ instance [T : Fintype α] [DecidableEq α] : Fintype (Finset α) where
       have mem_mk : ∀ a, a ∈ (T.elems.filter (fun x => decide (x ∈ S))) ↔ a ∈ (Finset.mk (T.elems.filter (fun x => decide (x ∈ S)))) := by
         apply mem_list_iff_mem_mk
       grind
-
---instance [T : Fintype α] [DecidableEq α] : DecidableEq (Powertype' α) :=

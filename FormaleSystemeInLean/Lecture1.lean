@@ -16,7 +16,7 @@ The elements of Sigma could be anything: unicode characters, numbers, strings...
 The only restriction we make is assuming that, given two alphabet symbols of type Sigma,
 we can decide wether they are equal or not. Otherwise it would be impossible to compare words.
 -/
-variable {Sigma : Type u} --[DecidableEq Sigma]
+variable {Sigma : Type u}
 
 /-- Words are merely lists over some alphabet Sigma. -/
 abbrev Word (Sigma : Type u) := List Sigma
@@ -678,18 +678,16 @@ theorem succ_pow_empty : ∀ n, n > 0 → Language.pow L_empty n = @L_empty Sigm
     simp
     apply empty_mul
 
-variable [DecidableEq Sigma]
-
 /--
 Using the two previous results first_power and add_exp, we can show that when writing the nth power of a language L
 as the concatenation of L with L^(-1) the order does not matter.
 -/
-theorem pow_as_concat_comm (L : Language Sigma) (n : Nat) : L * L^(n-1) = (L^(n-1)) * L := by
+theorem pow_as_concat_comm [BEq Sigma] (L : Language Sigma) (n : Nat) : L * L^(n-1) = (L^(n-1)) * L := by
   rw (occs := [1, 4]) [← first_power L]
   rw [add_exp L 1 (n-1)]
   rw [add_exp L (n-1) 1, Nat.add_comm]
 
-theorem kstar_plus (L : Language Sigma) : L⁺ = L* * L := by
+theorem kstar_plus [BEq Sigma] (L : Language Sigma) : L⁺ = L* * L := by
   apply Set.ext
   intro w
   constructor
@@ -720,7 +718,7 @@ theorem kstar_plus (L : Language Sigma) : L⁺ = L* * L := by
       . exists v
 
 /-- Removing the empty word from a language L does not change L*. -/
-theorem kstar_eq_L_minus_eps (L : Language Sigma) : L* = (L\L_eps)* := by
+theorem kstar_eq_L_minus_eps [DecidableEq Sigma] (L : Language Sigma) : L* = (L\L_eps)* := by
   apply Set.ext
   intro w
 
