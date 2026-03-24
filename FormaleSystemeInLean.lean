@@ -1,7 +1,6 @@
 import FormaleSystemeInLean.Exercise1
 import FormaleSystemeInLean.Exercise2
 import FormaleSystemeInLean.Fintype
-import FormaleSystemeInLean.FintypeSetDecidableEq
 import FormaleSystemeInLean.Lecture1
 import FormaleSystemeInLean.Lecture3
 import FormaleSystemeInLean.Lecture4
