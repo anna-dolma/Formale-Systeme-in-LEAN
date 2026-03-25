@@ -214,7 +214,7 @@ theorem Finset.eq_rfl (X : Finset α) : X = X := by
   simp only [implies_true]
 
 instance Finset.eq.decidable [DecidableEq α] (l k : Finset' α) : Decidable (Finset.eq l k) :=
-  -- FIXME: Dunno why this is not inferered automatically...
+  -- The Subset relation on lists is decidable if equality is decidable for list elements. For some reason this is not inferred automatically..
   have : DecidableRel List.Subset := @List.instDecidableRelSubsetOfDecidableEq α _
 
   if sub1 : List.Subset l k
