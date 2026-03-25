@@ -430,7 +430,7 @@ theorem first_power (L : Language Sigma) : L^1 = L := by
 theorem mul_eq_append (u v : Word Sigma) : u * v = u++v := by rfl
 
 /-- Product rule for exponents: when concatenating powers of a language we can add the exponents as we do when multiplying numbers. -/
-theorem add_exp [BEq Sigma] (L : Language Sigma) (m n : Nat) : (L^n) * L^m = L^(n+m) := by
+theorem add_exp (L : Language Sigma) (m n : Nat) : (L^n) * L^m = L^(n+m) := by
   apply Set.ext
   intro w
   constructor
@@ -682,12 +682,12 @@ theorem succ_pow_empty : ∀ n, n > 0 → Language.pow L_empty n = @L_empty Sigm
 Using the two previous results first_power and add_exp, we can show that when writing the nth power of a language L
 as the concatenation of L with L^(-1) the order does not matter.
 -/
-theorem pow_as_concat_comm [BEq Sigma] (L : Language Sigma) (n : Nat) : L * L^(n-1) = (L^(n-1)) * L := by
+theorem pow_as_concat_comm (L : Language Sigma) (n : Nat) : L * L^(n-1) = (L^(n-1)) * L := by
   rw (occs := [1, 4]) [← first_power L]
   rw [add_exp L 1 (n-1)]
   rw [add_exp L (n-1) 1, Nat.add_comm]
 
-theorem kstar_plus [BEq Sigma] (L : Language Sigma) : L⁺ = L* * L := by
+theorem kstar_plus (L : Language Sigma) : L⁺ = L* * L := by
   apply Set.ext
   intro w
   constructor
@@ -718,7 +718,7 @@ theorem kstar_plus [BEq Sigma] (L : Language Sigma) : L⁺ = L* * L := by
       . exists v
 
 /-- Removing the empty word from a language L does not change L*. -/
-theorem kstar_eq_L_minus_eps [DecidableEq Sigma] (L : Language Sigma) : L* = (L\L_eps)* := by
+theorem kstar_eq_L_minus_eps [BEq Sigma] (L : Language Sigma) : L* = (L\L_eps)* := by
   apply Set.ext
   intro w
 
