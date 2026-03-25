@@ -112,13 +112,13 @@ theorem totalDFA_lang_eq:
     . right; simp [DFA.toTotalDFA]
 
   rw [Finset.mem_map]
-  /-conv =>
-    right; congr; intro;
-    simp [Subtype.ext_iff];
+  conv =>
+    right; congr; intro
+    rw [Subtype.ext_iff]
     rw [← totalDFA_del_star_eq]
     rw [And.comm];
 
   constructor <;> intro ⟨x, l, r⟩ <;> exists x
   . simp [r, Option.mem_def.mp l]; rfl
-  . simp [r]; exact l.symm -/
-  sorry
+  . simp [r]; exact l.symm
+
