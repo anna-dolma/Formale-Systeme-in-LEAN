@@ -264,12 +264,7 @@ theorem Finset.mem_toSet (S : Finset α) : ∀ x, x ∈ S ↔ x ∈ S.toSet := b
   . intro x_mem; unfold Finset.toSet; simp only [Membership.mem]; exact x_mem
   . intro x_mem; unfold Finset.toSet at x_mem; simp only [Membership.mem] at x_mem; exact x_mem
 
-theorem Quotient.unlift₂.{uA, uB, uC} {α : Sort uA} {β : Sort uB} {φ : Sort uC} {s₁ : Setoid α} {s₂ : Setoid β} (f : α → β → φ)
-  (c : ∀ (a₁ : α) (b₁ : β) (a₂ : α) (b₂ : β), a₁ ≈ a₂ → b₁ ≈ b₂ → f a₁ b₁ = f a₂ b₂) (a : α) (b : β) :
-  Quotient.lift₂ f c (Quotient.mk s₁ a) (Quotient.mk s₂ b) = f a b := rfl
-
-theorem Finset.inter_eq [DecidableEq α] (l k : Finset' α) : mk l ∩ mk k = mk (l.filter (fun x => decide (x ∈ k))) := by
-  rfl --- ich heule TT
+theorem Finset.inter_eq [DecidableEq α] (l k : Finset' α) : mk l ∩ mk k = mk (l.filter (fun x => decide (x ∈ k))) := by rfl
 
 theorem Finset.mem_inter [DecidableEq α] (X Y : Finset α) (a : α) : a ∈ X ∩ Y ↔ a ∈ X ∧ a ∈ Y := by
   have rep_X := Quot.exists_rep X

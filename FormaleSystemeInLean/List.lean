@@ -85,15 +85,14 @@ theorem List.removeDups_count [DecidableEq α] (l : List α) : ∀ a, a ∈ l �
         rw [mem_removeDups] at a_mem_l'
         grind
 
-theorem List.removeDups_nodup [DecidableEq α] (l : List α) : l.removeDups.Nodup = True := by
+theorem List.removeDups_nodup [DecidableEq α] (l : List α) : l.removeDups.Nodup := by
   unfold Nodup removeDups
   induction l_eq : l generalizing l with
   | nil =>
     simp only [Pairwise.nil]
   | cons h t ih =>
-    simp only [eq_iff_iff, iff_true]
     have aux := ih t rfl
-    simp only [eq_iff_iff, iff_true, forall_eq] at *
+    simp only [forall_eq] at *
     by_cases h_mem : h ∈ t
     . simp only [h_mem, ite_true]
       unfold removeDups
@@ -105,29 +104,6 @@ theorem List.removeDups_nodup [DecidableEq α] (l : List α) : l.removeDups.Nodu
         grind
       . unfold removeDups
         exact aux
-
-theorem List.infix_removeDups [DecidableEq α] (l k : List α) : k.IsInfix l.removeDups → k = k.removeDups := by
-  intro inf
-
-  sorry
-
-theorem List.removeDups_length [DecidableEq α] (l : List α) : l.removeDups.length = l.removeDups.foldl (· + l.removeDups.count · ) 0 := by
-  induction len : l.removeDups.length generalizing l with
-  | zero =>
-    have l_eq : l.removeDups = [] := by grind
-    rw [l_eq]
-    rfl
-  | succ n ih =>
-    have aux := removeDups_count l
-    have l_len_pos : l.removeDups.length > 0 := by grind
-    have l_cons : ∃ b l', l.removeDups = b::l' := by
-      apply List.exists_cons_of_length_pos
-      exact l_len_pos
-    rcases l_cons with ⟨b, l', l_eq⟩
-    have l'_len : l'.length = n := by grind
-    have aux2 := ih l'
-    sorry
-
 
 /--
 Infix is decidable for Lists whose elements have decidable equality. (The proof is essentially the expanded version of the one from mathlib)

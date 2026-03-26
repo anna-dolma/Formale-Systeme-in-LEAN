@@ -7,3 +7,4 @@ import FormaleSystemeInLean.Lecture4
 import FormaleSystemeInLean.List
 import FormaleSystemeInLean.Powertype
 import FormaleSystemeInLean.Set
+import FormaleSystemeInLean.Finset
