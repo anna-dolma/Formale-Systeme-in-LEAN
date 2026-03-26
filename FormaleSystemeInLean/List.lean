@@ -123,8 +123,3 @@ instance List.decidableInfix [DecidableEq α] : ∀ (k l : List α), Decidable (
     letI := k.decidableInfix l
     @decidable_of_decidable_of_iff (k <+: b :: l ∨ k <:+: l) _ _
       infix_cons_iff.symm
-
-def List.isInfixOf [DecidableEq α] : List α → List α → Bool
-  | [], _ => true
-  | _, [] => false
-  | a::s, b::k => a::s <+: b::k ∨ s.isInfixOf k
